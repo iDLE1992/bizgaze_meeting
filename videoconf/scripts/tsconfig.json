@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "noEmitOnError": true,
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "target": "es5",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "baseUrl": "./",
+    "allowJs": true,
+    "checkJs": false,
+    "paths": {
+      "@microsoft/*": [ "../node_modules/@microsoft/*" ]
+    },
+    "lib": [
+      "es2016",
+      "dom",
+      "es5"
+    ],
+    "outDir": "build"
+  },
+  "compileOnSave": true
+}

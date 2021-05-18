@@ -1,0 +1,75 @@
+﻿body {
+    background-color: white;
+    color: black !important;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-image: url('/img/bizgaze_logo.png');
+    background-origin: border-box;
+}
+
+video {
+    max-width: 100%;
+    width: 320px;
+}
+
+h4 {
+    margin: 1em 0;
+}
+
+h5 {
+    margin: 1em 0;
+}
+
+.header {
+    margin-top: 60px;
+    margin-bottom: 40px;
+}
+
+#createMeetingBtn {
+    width: 200px;
+    height: 40px;
+}
+
+#meetingTitleTxt {
+    width: 300px;
+    height: 40px;
+}
+
+.meetingCreate {
+    margin: 2em 0 1em 0;
+}
+
+.joinButton {
+    width: 100%;
+    height: 40px;
+}
+
+#meetingTable td{
+
+}
+
+.borderLine {
+    border-top: 1px dotted;
+    margin: 1em 0;
+}
+
+.sendFileBtn {
+    display: block;
+    margin-top: 10px;
+}
+
+.fileTable {
+    border: 1px solid;
+    margin: 1em 0;
+    width: 500px;
+}
+
+    .fileTable th {
+        background: #e8eaed;
+        border: 1px solid;
+    }
+
+    .fileTable td {
+        border: 1px dotted;
+    }
+
