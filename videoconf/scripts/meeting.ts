@@ -278,8 +278,8 @@ export class BizGazeMeeting
      */
 
     connectToJitsiServer() {
-        const serverdomain = "idlests.com";
-        //const serverdomain = "unimail.in";
+        //const serverdomain = "idlests.com";
+        const serverdomain = "unimail.in";
 
         const connConf = {
             hosts: {
