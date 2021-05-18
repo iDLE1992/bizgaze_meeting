@@ -12,31 +12,38 @@ namespace BizGazeMeeting.Callback
     {
         public static void PostJson(string url, object jsonPayload, string authKey="")
         {
-            var client = new RestClient(url);
-            var request = new RestRequest(Method.POST);
-            if (authKey.Length > 0)
+            try
             {
-                request.AddHeader("Authorization", authKey);
-            }            
-            request.AddHeader("Content-Type", "application/json");
-            request.AddJsonBody(jsonPayload);
-            client.Execute(request);
+                var client = new RestClient(url);
+                var request = new RestRequest(Method.POST);
+                if (authKey.Length > 0)
+                {
+                    request.AddHeader("Authorization", authKey);
+                }
+                request.AddHeader("Content-Type", "application/json");
+                request.AddJsonBody(jsonPayload);
+                client.Execute(request);
+            } catch (Exception e)
+            {
+
+            }
+
         }
 
         public static void PostJson(string url, object jsonPayload,
             Action<string> success, Action<Exception> error, string authKey="")
         {
-            var client = new RestClient(url);
-            var request = new RestRequest(Method.POST);
-            if (authKey.Length > 0)
-            {
-                request.AddHeader("Authorization", authKey);
-            }
-            request.AddHeader("Content-Type", "application/json");
-            request.AddJsonBody(jsonPayload);
-
             try
             {
+                var client = new RestClient(url);
+                var request = new RestRequest(Method.POST);
+                if (authKey.Length > 0)
+                {
+                    request.AddHeader("Authorization", authKey);
+                }
+                request.AddHeader("Content-Type", "application/json");
+                request.AddJsonBody(jsonPayload);
+
                 IRestResponse response = client.Execute(request);
                 if (response != null && success != null)
                 {
