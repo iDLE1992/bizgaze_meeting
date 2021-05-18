@@ -6,11 +6,9 @@ using System;
 
 namespace BizGazeMeeting.DbModels
 {
+    [BsonIgnoreExtraElements]
     public class Meeting
     {
-        [BsonId]
-        public ObjectId Id { get; set; }
-
         [BsonElement("ConferenceId")]
         [Required]
         public Int64 ConferenceId { get; set; }
