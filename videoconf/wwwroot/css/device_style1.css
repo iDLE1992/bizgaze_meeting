@@ -1,0 +1,27 @@
+﻿.choose-device {
+    margin: 80px auto;
+}
+
+    .choose-device h1 {
+        font-size: 5em;
+    }
+
+.btn-primary:not(:disabled):not(.is-disabled):active {
+    background: #0052cc;
+}
+
+#camera-preview {
+    background-color: dimgrey;
+}
+
+.select2-search {
+    display: none;
+}
+
+.select2-container--bootstrap5 .select2-dropdown {
+    padding: 0px;
+}
+
+.select2-container--bootstrap5 .select2-selection__clear {
+    display: none;
+}
