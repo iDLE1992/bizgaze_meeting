@@ -16,6 +16,9 @@ declare global {
     interface Window {
         _roomId: number;
         _userId: number;
+        _camId: string;
+        _micId: string;
+        _speakerId: string;
         meetingController: any;
         JitsiMeetJS: any;
     }
@@ -102,6 +105,9 @@ export class BizGazeMeeting
     jitsiRoom: any;/*JitsiConference*/
     jitsiConnection: any;
 
+    //JitsiServerDomain = "idlests.com";
+    JitsiServerDomain = "unimail.in";
+
     localTracks: JitsiTrack[];
 
     screenSharing = false;
@@ -109,6 +115,12 @@ export class BizGazeMeeting
     downloadRecordFile = false;
 
     localStartTimestamp: number;
+
+    //default devices
+    activeCameraId: string = window._camId;
+    activeMicId: string = window._micId;
+    activeSpeakerId: string = window._speakerId;
+
 
     constructor() {
     }
@@ -120,7 +132,7 @@ export class BizGazeMeeting
      * **************************************************************************
      */
 
-    async start() {
+    start() {
         if (!(window._roomId && window._roomId > 0)) {
             this.leaveBGConference();
             return;
@@ -133,31 +145,49 @@ export class BizGazeMeeting
         this.JitsiMeetJS.setLogLevel(this.JitsiMeetJS.logLevels.ERROR);
         this.JitsiMeetJS.init(initOptions);
 
-        //capture media devices
-        await this.initMediaDevices();
-        this.Log("Camera: " + this.myInfo.hasMediaDevice.hasCamera);
-        this.Log("Mic: " + this.myInfo.hasMediaDevice.hasMic);
+        //device log
+        this.JitsiMeetJS.mediaDevices.enumerateDevices((devices: any[]) => {
+            devices.forEach(d => {
+                if (this.activeCameraId.length > 0 && d.deviceId === this.activeCameraId) {
+                    this.Log("Camera: " + d.label);
+                }
+                if (this.activeMicId.length > 0 && d.deviceId === this.activeMicId && d.kind === 'audioinput') {
+                    this.Log("Microphone: " + d.label);
+                }
+            })
+        });
 
-        //update device status
-        this.m_UI.updateToolbar(this.myInfo, this.localTracks);
+        this.initMediaDevices(() => {
+            //update device status
+            this.m_UI.updateToolbar(this.myInfo, this.localTracks);
 
-        //connect to bg server
-        this.connectToBGServer(() => {
-            this.Log("Connected to BizGaze SignalR Server");
-            this.joinBGConference();
+            //connect to bg server
+            this.connectToBGServer(() => {
+                this.Log("Connected to BizGaze SignalR Server");
+                this.joinBGConference();
+            });
         });
     }
 
     stop() {
-        if (this.joinedJitsiConference)
-            this.leaveJitsiConference();
-        else
+        if (this.jitsiRoom) {
+            for (let i = 0; i < this.localTracks.length; i++) {
+                this.jitsiRoom.removeTrack(this.localTracks[i]);
+            }
+            this.jitsiRoom.leave().then(() => {
+                debugger;
+                this.leaveBGConference();
+            }).catch((error: any) => {
+                debugger;
+                this.leaveBGConference();
+            });
+        } else {
             this.leaveBGConference();
+        }
     }
 
     forceStop() {
-        this.leaveJitsiConference();
-        this.leaveBGConference();
+        this.stop();
     }
 
     /**
@@ -167,53 +197,71 @@ export class BizGazeMeeting
      * **************************************************************************
      */
 
-    async initMediaDevices() {
+    initMediaDevices(callback: Function) {
         this.Log('Getting user media devices ...');
 
-        await this.JitsiMeetJS.mediaDevices.enumerateDevices((devices: any) => {
+        //set speaker
+        if (this.activeSpeakerId && this.JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
+            this.JitsiMeetJS.mediaDevices.setAudioOutputDevice(this.activeSpeakerId);
+        };
 
-            let audioInputDeviceExist: boolean = false;
-            let videoInputDeviceExist: boolean = false;
+        //set input devices
+        this.createLocalTracks(this.activeCameraId, this.activeMicId)
+            .then((tracks: JitsiTrack[]) => {
+                this.onLocalTracks(tracks);
+                callback();
+            }).catch((error: any) => {
+                this.onLocalTracks([]);
+                callback();
+            });
+    }
 
-            const videoInputDevices
-                = devices.filter((d: any) =>
-                    d.kind === 'videoinput');
+    createVideoTrack(cameraDeviceId: string): Promise<JitsiTrack[]> {
 
+        return this.JitsiMeetJS.createLocalTracks({
+            devices: ['video'],
+            cameraDeviceId,
+            micDeviceId: null
+        })
+            .catch((error: any) => {
+                this.Log(error);
+                return Promise.resolve([]);
+            });
+    }
 
-            if (videoInputDevices.length >= 1) {
-                this.Log("found one camera");
-                videoInputDeviceExist = true;
-                videoInputDevices.map(
-                    (d: any) =>
-                        this.Log(`${d.deviceId}  ---> ${d.label}`));
-            }
+    createAudioTrack(micDeviceId: string): Promise<JitsiTrack[]> {
+        return (
+            this.JitsiMeetJS.createLocalTracks({
+                devices: ['audio'],
+                cameraDeviceId: null,
+                micDeviceId
+            })
+                .catch((error: any) => {
+                    this.Log(error);
+                    return Promise.resolve([]);
+                }));
+    }
 
-            const audioInputDevices
-                = devices.filter((d: any) => d.kind === 'audioinput');
+    createLocalTracks(cameraDeviceId: string, micDeviceId: string): Promise<JitsiTrack[]> {
 
-            if (audioInputDevices.length >= 1) {
-                audioInputDeviceExist = true;
-                audioInputDevices.map(
-                    (d: any) =>
-                        this.Log(`${d.deviceId}  ---> ${d.label}`));
-            }
+        if (cameraDeviceId != null && micDeviceId != null) {
+            return this.JitsiMeetJS.createLocalTracks({
+                devices: ['audio', 'video'],
+                cameraDeviceId,
+                micDeviceId
+            }).catch(() => Promise.all([
+                this.createAudioTrack(micDeviceId).then(([stream]) => stream),
+                this.createVideoTrack(cameraDeviceId).then(([stream]) => stream)
+            ])).then((tracks: JitsiTrack[]) => {
+                return tracks.filter(t => typeof t !== 'undefined');
+            });
+        } else if (cameraDeviceId != null) {
+            return this.createVideoTrack(cameraDeviceId);
+        } else if (micDeviceId != null) {
+            return this.createAudioTrack(micDeviceId);
+        }
 
-            /*let createTrackOptions = [];
-            if (audioInputDeviceExist) createTrackOptions.push(MediaType.AUDIO);
-            if (videoInputDeviceExist) createTrackOptions.push(MediaType.VIDEO);*/
-        });
-
-        const audioTracks = await this.JitsiMeetJS.createLocalTracks({ devices: [MediaType.AUDIO] }).catch((err: any) => {
-        });
-
-        const videoTracks = await this.JitsiMeetJS.createLocalTracks({ devices: [MediaType.VIDEO] }).catch((err: any) => {
-        });
-
-        let tracks = [];
-        if (audioTracks && audioTracks.length > 0) tracks.push(audioTracks[0]);
-        if (videoTracks && videoTracks.length > 0) tracks.push(videoTracks[0]);
-
-        this.onLocalTracks(tracks);
+        return Promise.resolve([]);
     }
 
     private onLocalTracks(tracks: any[]) {
@@ -276,8 +324,7 @@ export class BizGazeMeeting
      */
 
     connectToJitsiServer() {
-        const serverdomain = "idlests.com";
-        //const serverdomain = "unimail.in";
+        const serverdomain = this.JitsiServerDomain;
 
         const connConf = {
             hosts: {
@@ -306,16 +353,16 @@ export class BizGazeMeeting
     }
 
     onJitsiConnectionSuccess() {
-        this.Log("Connected to Jitsi Server");
+        this.Log("Connected to Jitsi Server - " + this.JitsiServerDomain);
         this.joinJitsiConference();
     }
 
     onJitsiConnectionFailed() {
-        this.Log("sorry, failed to connect jitsi server");
+        this.Log("Failed to connect Jitsi Server - " + this.JitsiServerDomain);
     }
 
     disconnectFromJitsiServer() {
-        this.Log("disconnected from jitsi server");
+        this.Log("Disconnected from Jitsi Server - " + this.JitsiServerDomain);
     }
 
     private joinJitsiConference() {
@@ -326,17 +373,17 @@ export class BizGazeMeeting
         this.jitsiRoom = this.jitsiConnection.initJitsiConference(`${this.roomInfo.Id}`, confOptions);
 
         //remote track
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_ADDED, async (track: any) => {
-            await this.onAddedRemoteTrack(track);
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_ADDED, (track: any) => {
+            this.onAddedRemoteTrack(track);
         });
         this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_REMOVED, async (track: any) => {
-            await this.onRemovedRemoteTrack(track);
+            this.onRemovedRemoteTrack(track);
         });
 
         //my join
         this.jitsiRoom.on(
             this.JitsiMeetJS.events.conference.CONFERENCE_JOINED,
-            async () => { await this.onJitsiConferenceJoined(); });
+            () => { this.onJitsiConferenceJoined(); });
 
         //my left
         this.jitsiRoom.on(
@@ -395,26 +442,21 @@ export class BizGazeMeeting
         this.jitsiRoom.join(); //callback -  onJitsiUserJoined
     }
 
-    async leaveJitsiConference() {
-        for (let i = 0; i < this.localTracks.length; i++) {
-            await this.jitsiRoom.removeTrack(this.localTracks[i]);
-        }
-        await this.jitsiRoom.leave().then(() => {
-            this.leaveBGConference();
-        });
+    leaveJitsiConference() {
+
     }
 
     //my enter room
-    async onJitsiConferenceJoined() {
+    onJitsiConferenceJoined() {
         this.joinedJitsiConference = true;
-        setTimeout(async ()=>{
+        //setTimeout(async ()=>{
             for (let i = 0; i < this.localTracks.length; i++) {
                 this.Log("[ OUT ] my track - " + this.localTracks[i].getType());
-                await this.jitsiRoom.addTrack(this.localTracks[i]).catch((error: any) => {
+                this.jitsiRoom.addTrack(this.localTracks[i]).catch((error: any) => {
                     this.Log(error);
                 });
             }
-        }, 500);
+        //}, 500);
 
         //set subject
         this.m_UI.showMeetingSubject(this.roomInfo.subject);
@@ -457,7 +499,7 @@ export class BizGazeMeeting
     }
 
     //[ IN ] remote track
-    async onAddedRemoteTrack(track: JitsiTrack) {
+    onAddedRemoteTrack(track: JitsiTrack) {
         if (track.isLocal()) {
             return;
         }
@@ -477,6 +519,17 @@ export class BizGazeMeeting
         }
     }
 
+    // [DEL] remote track
+    onRemovedRemoteTrack(track: JitsiTrack) {
+        this.Log("[ DEL ] remotetrack - " + track.getType());
+        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_VIDEOTYPE_CHANGED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.NO_DATA_FROM_SOURCE);
+    }
+
     private _updateUserPanel(user: JitsiParticipant) {
         if (user && user.getProperty(UserProperty.videoElem)) {
             const videoElem = user.getProperty(UserProperty.videoElem) as HTMLMediaElement;
@@ -489,16 +542,7 @@ export class BizGazeMeeting
             this.m_UI.updatePanelOnMyBGUser(this.localVideoElem, this.myInfo, this.localTracks);
     }
 
-    // [DEL] remote track
-    async onRemovedRemoteTrack(track: JitsiTrack) {
-        this.Log("[ DEL ] remotetrack - " + track.getType());
-        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_VIDEOTYPE_CHANGED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.NO_DATA_FROM_SOURCE);
-    }
+    
 
     /**
      * **************************************************************************

@@ -9,7 +9,8 @@ declare global {
 
 export class Lobby {
     JitsiMeetJS = window.JitsiMeetJS;
-    videoElem: HTMLElement;
+    videoPreviewElem: HTMLElement;
+    audioPreviewElem: HTMLElement;
 
     cameraListElem: HTMLElement;
     micListElem: HTMLElement;
@@ -29,7 +30,9 @@ export class Lobby {
 
 
     constructor() {
-        this.videoElem = document.getElementById("camera-preview");
+        this.videoPreviewElem = document.getElementById("camera-preview");
+        this.audioPreviewElem = document.getElementById("mic-preview");
+
         this.cameraListElem = document.getElementById("camera-list");
         this.micListElem = document.getElementById("mic-list");
         this.speakerListElem = document.getElementById("speaker-list");
@@ -93,7 +96,16 @@ export class Lobby {
         this.activeMicDeviceId = this.micList.length > 0 ? this.micList[0].deviceId : null;
         this.activeSpeakerDeviceId = this.speakerList.length > 0 ? this.speakerList[0].deviceId : null;
 
-        this.testLocalDevices();
+        this.createLocalTracks(this.activeCameraDeviceId, this.activeMicDeviceId)
+            .then((tracks: JitsiTrack[]) => {
+                tracks.forEach(t => {
+                    if (t.getType() === MediaType.VIDEO) {
+                        t.attach(this.videoPreviewElem);
+                    } else if (t.getType() === MediaType.AUDIO) {
+                        t.attach(this.audioPreviewElem);
+                    }
+                });
+            });
     }
 
     clearDOMElement(elem: HTMLElement) {
@@ -102,18 +114,7 @@ export class Lobby {
         }
     }
 
-    testLocalDevices() {
-        this.createLocalTrack(this.activeCameraDeviceId, this.activeMicDeviceId)
-            .then((tracks: JitsiTrack[]) => {
-                tracks.forEach(t => {
-                    if (t.getType() === MediaType.VIDEO) {
-                        t.attach(this.videoElem);
-                    }
-                });
-            });
-    }
-
-    createLocalTrack(cameraDeviceId: string, micDeviceId: string): Promise<JitsiTrack[]> {
+    createLocalTracks(cameraDeviceId: string, micDeviceId: string): Promise<JitsiTrack[]> {
 
         this.videoTrackError = null;
         this.audioTrackError = null;
@@ -174,26 +175,33 @@ export class Lobby {
 
     onCameraChanged(cameraDeviceId: string) {
         this.activeCameraDeviceId = cameraDeviceId;
-        this.testLocalDevices();
+        this.createLocalTracks(this.activeCameraDeviceId, null)
+            .then((tracks: JitsiTrack[]) => {
+                tracks.forEach(t => {
+                    if (t.getType() === MediaType.VIDEO) {
+                        t.attach(this.videoPreviewElem);
+                    }
+                });
+            });
     }
 
     onMicChanged(micDeviceId: string) {
         this.activeMicDeviceId = micDeviceId;
-        this.testLocalDevices();
+        this.createLocalTracks(null, this.activeMicDeviceId)
+            .then((tracks: JitsiTrack[]) => {
+                tracks.forEach(t => {
+                    if (t.getType() === MediaType.AUDIO) {
+                        t.attach(this.audioPreviewElem);
+                    }
+                });
+            });
     }
 
     onSpeakerChanged(speakerDeviceId: string) {
         this.activeSpeakerDeviceId = speakerDeviceId;
-        this.testLocalSpeaker();
-    }
-
-    testLocalSpeaker() {
-        if (!this.activeSpeakerDeviceId)
-            return;
-
-        if (this.JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
+        if (this.activeSpeakerDeviceId && this.JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
             this.JitsiMeetJS.mediaDevices.setAudioOutputDevice(this.activeSpeakerDeviceId);
-        }
+        };
     }
 
     startSession() {
