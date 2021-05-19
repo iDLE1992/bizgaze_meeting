@@ -1,7 +1,8 @@
-﻿@page "/room/{conferenceId}/user/{userId}"
+﻿@page
 
 @model BizGazeMeeting.Pages.meeting.IndexModel
 @{
+    ViewData["Title"] = "Meeting";
 }
 
 
@@ -263,11 +264,6 @@
 <form id="return" method="get" action="/"></form>
 
 @section Scripts{
-    <script type="text/javascript">
-
-        window._roomId = '@(ViewContext.RouteData.Values["conferenceId"])';
-        window._userId = '@(ViewContext.RouteData.Values["userId"])';
-    </script>
     <script type="text/javascript" src="~/lib/microsoft-signalr/signalr.min.js"></script>
     <script type="text/javascript" src="~/js/adapter-latest.js"></script>
     <script type="text/javascript" src="~/js/jquery.dataTables.min.js"></script>
@@ -276,7 +272,12 @@
     <script type="text/javascript" src="~/lib/jitsi/lib-jitsi-meet.min.js"></script>
     <script type="text/javascript">
         window.JitsiMeetJS = JitsiMeetJS;
+
+        window._roomId = '@Model._meetingId';
+        window._userId = '@Model._userId';
+        window._camId = '@Model._camId';
+        window._micId = '@Model._micId';
+        window._speakerId = '@Model._speakerId';
     </script>
     <script type="text/javascript" src="~/scripts/meeting.js"></script>
-
 }

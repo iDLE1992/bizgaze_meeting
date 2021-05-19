@@ -1,7 +1,6 @@
 ﻿"use strict";
 
 import * as signalR from "@microsoft/signalr";
-import { BizGazeConnection } from "./peerconnection";
 import { BGC_Msg } from "./BGC_Msg"
 import { MeetingUI } from "./meeting_ui";
 import { UserInfo } from "./user"
@@ -62,7 +61,6 @@ enum ControlMessageTypes {
 export class BizGazeMeeting
 {
     connection: signalR.HubConnection = new signalR.HubConnectionBuilder().withUrl("/BizGazeMeetingServer").build();
-    connMap = new Map<string, BizGazeConnection>();
 
     joinedBGConference: boolean = false;
     joinedJitsiConference: boolean = false;
@@ -278,8 +276,8 @@ export class BizGazeMeeting
      */
 
     connectToJitsiServer() {
-        //const serverdomain = "idlests.com";
-        const serverdomain = "unimail.in";
+        const serverdomain = "idlests.com";
+        //const serverdomain = "unimail.in";
 
         const connConf = {
             hosts: {
@@ -328,11 +326,11 @@ export class BizGazeMeeting
         this.jitsiRoom = this.jitsiConnection.initJitsiConference(`${this.roomInfo.Id}`, confOptions);
 
         //remote track
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_ADDED, (track: any) => {
-            this.onAddedRemoteTrack(track);
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_ADDED, async (track: any) => {
+            await this.onAddedRemoteTrack(track);
         });
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_REMOVED, (track: any) => {
-            this.onRemovedRemoteTrack(track);
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_REMOVED, async (track: any) => {
+            await this.onRemovedRemoteTrack(track);
         });
 
         //my join
@@ -343,7 +341,7 @@ export class BizGazeMeeting
         //my left
         this.jitsiRoom.on(
             this.JitsiMeetJS.events.conference.CONFERENCE_LEFT,
-            () => { this.onJitsiConferenceLeft(); }
+            async () => { this.onJitsiConferenceLeft(); }
         );
 
         //remote join
@@ -459,7 +457,7 @@ export class BizGazeMeeting
     }
 
     //[ IN ] remote track
-    onAddedRemoteTrack(track: JitsiTrack) {
+    async onAddedRemoteTrack(track: JitsiTrack) {
         if (track.isLocal()) {
             return;
         }
@@ -492,7 +490,7 @@ export class BizGazeMeeting
     }
 
     // [DEL] remote track
-    onRemovedRemoteTrack(track: JitsiTrack) {
+    async onRemovedRemoteTrack(track: JitsiTrack) {
         this.Log("[ DEL ] remotetrack - " + track.getType());
         track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED);
         track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED);
@@ -562,7 +560,6 @@ export class BizGazeMeeting
 
         this.stopAllMediaStreams();
         this.m_BGUserList.clear();
-        this.connMap.clear();
         $("form#return").submit();
     }
 
@@ -575,12 +572,7 @@ export class BizGazeMeeting
             this.Log(this.m_BGUserList.get(userId).Name + " has left");
 
         if (this.m_BGUserList.has(userId)) {
-            let conn: BizGazeConnection = this.connMap.get(userId);
-            if (conn != null)
-                conn.closePeerConnection();
-
             this.m_BGUserList.delete(userId);
-            this.connMap.delete(userId);
         }
 
         //self leave

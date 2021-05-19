@@ -13,12 +13,23 @@ namespace BizGazeMeeting.Pages.meeting
     {
         private readonly ILogger<IndexModel> _logger;
 
+        public Int64 _meetingId;
+        public Int64 _userId;
+        public string _camId;
+        public string _micId;
+        public string _speakerId;
+
         public IndexModel(ILogger<IndexModel> logger)
         {
             _logger = logger;
         }
-        public void OnGet()
+        public void OnPost(Int64 meetingId, Int64 userId, string cameraId, string micId, string speakerId)
         {
+            this._meetingId = meetingId;
+            this._userId = userId;
+            this._camId = cameraId;
+            this._micId = micId;
+            this._speakerId = speakerId;
         }
     }
 }

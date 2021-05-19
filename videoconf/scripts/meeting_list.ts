@@ -78,5 +78,5 @@ function createMeeting(meetingTitle: string) {
 }
 
 function joinMeeting(meetingId: number, userId: number) {
-    location.href = `/room/${meetingId}/user/${userId}`;
+    location.href = `/lobby/${meetingId}/user/${userId}`;
 }

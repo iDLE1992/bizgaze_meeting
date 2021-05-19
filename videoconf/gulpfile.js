@@ -43,7 +43,7 @@ gulp.task('copy_js', async function () {
         }))
         .pipe(gulp.dest('wwwroot/scripts'));
 
-    gulp.src('scripts/build/peerconnection.js')
+    gulp.src('scripts/build/lobby.js')
         .pipe(browserify({
             insertGlobals: true,
             debug: true
