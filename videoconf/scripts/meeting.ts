@@ -170,6 +170,9 @@ export class BizGazeMeeting
     }
 
     stop() {
+        //todo 
+        //if it was recording, save it before stop
+
         if (this.jitsiRoom) {
             for (let i = 0; i < this.localTracks.length; i++) {
                 this.jitsiRoom.removeTrack(this.localTracks[i]);
@@ -514,7 +517,8 @@ export class BizGazeMeeting
                 user.setProperty(UserProperty.videoElem, videoElem);
                 this._updateUserPanel(user);
             }
-            track.attach(videoElem);            
+            if (track.getType() === MediaType.AUDIO)
+                track.attach(videoElem);            
             this._updateUserPanel(user);
         }
     }
