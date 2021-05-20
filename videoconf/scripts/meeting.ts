@@ -517,8 +517,8 @@ export class BizGazeMeeting
                 user.setProperty(UserProperty.videoElem, videoElem);
                 this._updateUserPanel(user);
             }
-            if (track.getType() === MediaType.AUDIO)
-                track.attach(videoElem);            
+            //if (track.getType() === MediaType.AUDIO)
+            track.attach(videoElem);            
             this._updateUserPanel(user);
         }
     }
