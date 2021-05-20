@@ -344,6 +344,10 @@ export class MeetingUI
         return $(`.${this.videoElementClass}`, panel)[0] as HTMLMediaElement;
     }
 
+    private _getAudioElementFromPanel(panel: HTMLElement): HTMLMediaElement {
+        return $(`audio`, panel)[0] as HTMLMediaElement;
+    }
+
     private _getShortNameElementFromPanel(panel: HTMLElement): HTMLElement {
         return $(`.${this.shortNameClass}`, panel)[0] as HTMLElement;
     }
@@ -469,7 +473,7 @@ export class MeetingUI
         }
     }
 
-    public getEmptyVideoPanel(): HTMLMediaElement {
+    public getEmptyVideoPanel(): any {
         let panel: HTMLElement = this.addNewPanel();
         this.registerPanelEventHandler(panel);
 
@@ -478,8 +482,9 @@ export class MeetingUI
         this._getAudioMuteElementFromPanel(panel).style.display = "none";
         this._getModeratorStarElementFromPanel(panel).style.display = "none";
 
-        let videoElem = this._getVideoElementFromPanel(panel);
-        return videoElem;
+        const videoElem = this._getVideoElementFromPanel(panel);
+        const audioElem = this._getAudioElementFromPanel(panel);
+        return {videoElem, audioElem};
     }
 
     public updatePanelOnJitsiUser(videoElem: HTMLMediaElement, myInfo: UserInfo, user: JitsiParticipant) {
@@ -873,7 +878,6 @@ export class MeetingUI
 
         var isSpeak = false;
         var isDisableCamera = true;
-        var isMute = true;
 
         var activeSpeaker = '';
         if (isSpeak) {
@@ -882,7 +886,12 @@ export class MeetingUI
 
         var avatarVisible = '';
         var cameraStatus = '';
-        var videoTag = '';
+
+        ++this.nPanelInstanceId;
+
+        const videoTag = `<video autoplay playsinline  class='${this.videoElementClass}' id='remoteVideo_${this.nPanelInstanceId}'></video>`;
+        const audioTag = `<audio autoplay="" id="remoteAudio_${this.nPanelInstanceId}"></audio>`;
+
         if (isDisableCamera) {
             avatarVisible = 'visible';
             cameraStatus = '<div class="indicator-container videoMuted"> \
@@ -896,15 +905,10 @@ export class MeetingUI
                                 </span> \
                             </div> \
                         </div>';
-            videoTag = `<video autoplay playsinline  class='${this.videoElementClass}' id='remoteVideo_${++this.nPanelInstanceId}'></video>`;
-        } else {
-            videoTag = `<video autoplay playsinline  class='${this.videoElementClass}'  id="remoteVideo_${++this.nPanelInstanceId}"></video>`; //set camera parameter;
+            
         }
 
-        var micStatus = '';
-        var audioTag = '';
-        if (isMute) {
-            micStatus = '<div class="indicator-container audioMuted"> \
+        const  micStatus = '<div class="indicator-container audioMuted"> \
                             <div> \
                                 <span class="indicator-icon-container  toolbar-icon" id=""> \
                                     <div class="jitsi-icon "> \
@@ -915,10 +919,6 @@ export class MeetingUI
                                 </span> \
                             </div> \
                         </div>';
-            audioTag = '<audio></audio>';
-        } else {
-            audioTag = '<audio autoplay="" id="remoteAudio_"></audio>';
-        }
 
         const moderatorStatus = '<div class="moderator-icon right"> \
                                 <div class="indicator-container"> \

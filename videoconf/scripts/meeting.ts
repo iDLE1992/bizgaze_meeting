@@ -73,6 +73,7 @@ export class BizGazeMeeting
     roomInfo: BGRoom = new BGRoom();
     m_BGUserList = new Map<string, UserInfo>();
     localVideoElem: HTMLMediaElement = null;
+    localAudioElem: HTMLMediaElement = null;
 
     myJitsiUserInfo: any;
     myInfo: UserInfo
@@ -105,8 +106,8 @@ export class BizGazeMeeting
     jitsiRoom: any;/*JitsiConference*/
     jitsiConnection: any;
 
-    //JitsiServerDomain = "idlests.com";
-    JitsiServerDomain = "unimail.in";
+    JitsiServerDomain = "idlests.com";
+    //JitsiServerDomain = "unimail.in";
 
     localTracks: JitsiTrack[];
 
@@ -294,7 +295,10 @@ export class BizGazeMeeting
         }
 
         if (this.localVideoElem == null) {
-            this.localVideoElem = this.m_UI.getEmptyVideoPanel();
+            const { videoElem, audioElem } = this.m_UI.getEmptyVideoPanel();
+            this.localVideoElem = videoElem;
+            this.localAudioElem = audioElem;
+            
         }
 
         this._updateMyPanel();
@@ -302,6 +306,7 @@ export class BizGazeMeeting
         for (let i = 0; i < this.localTracks.length; i++) {
             if (this.localTracks[i].getType() === MediaType.VIDEO) {
                 this.localTracks[i].attach(this.localVideoElem);
+                this.localVideoElem.play();
                 this.m_UI.setShotnameVisible(false, this.localVideoElem);
             }
         }
@@ -441,6 +446,13 @@ export class BizGazeMeeting
         //set name
         this.jitsiRoom.setDisplayName(this.myInfo.Name);
 
+        for (let i = 0; i < this.localTracks.length; i++) {
+            this.Log("[ OUT ] my track - " + this.localTracks[i].getType());
+            this.jitsiRoom.addTrack(this.localTracks[i]).catch((error: any) => {
+                this.Log(error);
+            });
+        }
+
         //joinJitsiConference
         this.jitsiRoom.join(); //callback -  onJitsiUserJoined
     }
@@ -452,14 +464,6 @@ export class BizGazeMeeting
     //my enter room
     onJitsiConferenceJoined() {
         this.joinedJitsiConference = true;
-        //setTimeout(async ()=>{
-            for (let i = 0; i < this.localTracks.length; i++) {
-                this.Log("[ OUT ] my track - " + this.localTracks[i].getType());
-                this.jitsiRoom.addTrack(this.localTracks[i]).catch((error: any) => {
-                    this.Log(error);
-                });
-            }
-        //}, 500);
 
         //set subject
         this.m_UI.showMeetingSubject(this.roomInfo.subject);
@@ -482,10 +486,13 @@ export class BizGazeMeeting
     onJitsiUserJoined(id: string, user: JitsiParticipant) {
         this.Log(`joined user: ${user.getDisplayName()}`);
 
+        //if track doesn't arrive for certain time
+        //generate new panel for that user
         setTimeout(() => {
             if (!user.getProperty(UserProperty.videoElem)) {
-                const videoElem = this.m_UI.getEmptyVideoPanel();
+                const { videoElem, audioElem } = this.m_UI.getEmptyVideoPanel();
                 user.setProperty(UserProperty.videoElem, videoElem);
+                user.setProperty(UserProperty.audioElem, audioElem);
                 this._updateUserPanel(user);
             }
         }, 3000);
@@ -510,17 +517,28 @@ export class BizGazeMeeting
 
         const id = track.getParticipantId();
         const user = this.jitsiRoom.getParticipantById(id);
-        if (user) {
-            let videoElem = user.getProperty(UserProperty.videoElem) as HTMLMediaElement;
-            if (!videoElem) {
-                videoElem = this.m_UI.getEmptyVideoPanel();
-                user.setProperty(UserProperty.videoElem, videoElem);
-                this._updateUserPanel(user);
-            }
-            //if (track.getType() === MediaType.AUDIO)
-            track.attach(videoElem);            
-            this._updateUserPanel(user);
+        if (!user) return;
+        
+        let videoElem = user.getProperty(UserProperty.videoElem) as HTMLMediaElement;
+        if (!videoElem) {
+            const { videoElem, audioElem } = this.m_UI.getEmptyVideoPanel();
+            user.setProperty(UserProperty.videoElem, videoElem);
+            user.setProperty(UserProperty.audioElem, audioElem);
         }
+
+        if (track.getType() === MediaType.VIDEO) {
+            const videoElem = user.getProperty(UserProperty.videoElem);
+            track.attach(videoElem);
+            videoElem.play();
+        }
+        else if (track.getType() === MediaType.AUDIO) {
+            const audioElem = user.getProperty(UserProperty.audioElem);
+            track.attach(audioElem);
+            audioElem.play();
+        }
+
+        this._updateUserPanel(user);
+        
     }
 
     // [DEL] remote track
@@ -846,6 +864,8 @@ export class BizGazeMeeting
                 }
                 this.localTracks.push(screenTrack);
                 screenTrack.attach(this.localVideoElem);
+                this.localVideoElem.play();
+
                 this.screenSharing = true;
             });
         })
@@ -890,6 +910,7 @@ export class BizGazeMeeting
                     }
                     this.localTracks.push(videoTrack);
                     videoTrack.attach(this.localVideoElem);
+                    this.localVideoElem.play();
 
                     this.screenSharing = false;
                 });
