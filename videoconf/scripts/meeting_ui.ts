@@ -686,14 +686,18 @@ export class MeetingUI
         
         if (audioMuted) {
             $(this.toolbarAudioButtonElement).find("path").attr("d", VectorIcon.AUDIO_MUTE_ICON);
+            $(this.toolbarAudioButtonElement).addClass("muted");
         } else {
             $(this.toolbarAudioButtonElement).find("path").attr("d", VectorIcon.AUDIO_UNMUTE_ICON);
+            $(this.toolbarAudioButtonElement).removeClass("muted");
         }
 
         if (videoMuted) {
             $(this.toolbarVideoButtonElement).find("path").attr("d", VectorIcon.VIDEO_MUTE_ICON);
+            $(this.toolbarVideoButtonElement).addClass("muted");
         } else {
             $(this.toolbarVideoButtonElement).find("path").attr("d", VectorIcon.VIDEO_UNMUTE_ICON);
+            $(this.toolbarVideoButtonElement).removeClass("muted");
         }
     }
 

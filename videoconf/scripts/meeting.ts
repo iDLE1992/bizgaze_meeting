@@ -740,7 +740,6 @@ export class BizGazeMeeting
     }
 
     public muteUserVideo(targetId: string, mute: boolean) {
-        debugger;
         let param = new CommandParam();
         param.value = targetId;
         param.attributes = { mute: mute };
@@ -749,23 +748,23 @@ export class BizGazeMeeting
 
     //these are called when user press bottom toolbar buttons
     public OnToggleMuteMyAudio() {
-        if (this.myInfo.IsHost) {
+        //if (this.myInfo.IsHost) {
             let audioMuted = false;
             this.localTracks.forEach(track => {
                 if (track.getType() === MediaType.AUDIO && track.isMuted()) audioMuted = true;
             });
             this.muteMyAudio(!audioMuted);
-        }
+        //}
     }
 
     public OnToggleMuteMyVideo() {
-        if (this.myInfo.IsHost) {
+        //if (this.myInfo.IsHost) {
             let videoMuted = false;
             this.localTracks.forEach(track => {
                 if (track.getType() === MediaType.VIDEO && track.isMuted()) videoMuted = true;
             });
             this.muteMyVideo(!videoMuted);
-        }
+        //}
     }
 
     private onMutedAudio(param: CommandParam) {
