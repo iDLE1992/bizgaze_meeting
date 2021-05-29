@@ -1,10 +1,18 @@
 ﻿import { JitsiTrack } from "./jitsi/JitsiTrack"
-import { MediaType } from "./jitsi/MediaType"
+import { MediaType } from "./enum/MediaType"
+import { stripHTMLTags } from "./util/snippet"
+import { BGMeeting } from "./model/BGMeeting";
+import { ParticipantType } from "./enum/ParticipantType";
 
 declare global {
     interface Window {
         JitsiMeetJS: any;
+        conferenceId: number;
+        userId: string;
     }
+}
+
+class LobbySeetings {
 }
 
 export class Lobby {
@@ -15,6 +23,11 @@ export class Lobby {
     cameraListElem: HTMLElement;
     micListElem: HTMLElement;
     speakerListElem: HTMLElement;
+
+    videoMuteElem: HTMLInputElement;
+    audioMuteElem: HTMLInputElement;
+
+    anonymousNameFiled: HTMLInputElement;
     startSessionButton: HTMLElement;
 
     cameraList: any[];
@@ -28,6 +41,9 @@ export class Lobby {
     activeMicDeviceId: string = null;
     activeSpeakerDeviceId: string = null;
 
+    conferenceId: number = window.conferenceId;
+    userId: string = window.userId;
+
 
     constructor() {
         this.videoPreviewElem = document.getElementById("camera-preview");
@@ -36,6 +52,11 @@ export class Lobby {
         this.cameraListElem = document.getElementById("camera-list");
         this.micListElem = document.getElementById("mic-list");
         this.speakerListElem = document.getElementById("speaker-list");
+
+        this.videoMuteElem = document.getElementById("videoMute") as HTMLInputElement;
+        this.audioMuteElem = document.getElementById("audioMute") as HTMLInputElement;
+
+        this.anonymousNameFiled = document.getElementById("anonymous-name") as HTMLInputElement;
         this.startSessionButton = document.getElementById("start-session");
     }
 
@@ -47,8 +68,26 @@ export class Lobby {
         this.JitsiMeetJS.init(initOptions);
 
         $(document).ready(() => {
+            this.resizeCameraView();
             this.attachEventHandlers();
             this.refreshDeviceList();
+
+            $(this.startSessionButton).prop('disabled', true);
+            this.videoMuteElem.checked = true;
+            this.audioMuteElem.checked = true;
+
+            $.ajax({
+                url: "/api/Meeting/" + this.conferenceId,
+                type: "GET",
+                data: "",
+                dataType: 'json',
+                success: (res: any) => {
+                    this.onMeetingResult(res);
+                },
+                error: (xhr, status, error) => {
+                    this.onMeetingErrorResult(error);
+                }
+            });
         });
     }
 
@@ -67,6 +106,9 @@ export class Lobby {
         $(this.startSessionButton).on('click', () => {
             this.startSession();
         })
+        $(window).resize(() => {
+            this.resizeCameraView();
+        });
     }
 
     refreshDeviceList() {
@@ -204,14 +246,77 @@ export class Lobby {
         };
     }
 
+    resizeCameraView() {
+        const w = $("#camera-preview").width();
+        const h = w * 9 / 16;
+        $("#camera-preview").css("height", h);
+        $("#camera-preview").css("min-height", h);
+    }
+
     startSession() {
-        if (!!this.activeCameraDeviceId)
-            $("[name=cameraId]").val(this.activeCameraDeviceId);
-        if (!!this.activeMicDeviceId)
-            $("[name=micId]").val(this.activeMicDeviceId);
-        if (!!this.activeSpeakerDeviceId)
-            $("[name=speakerId]").val(this.activeSpeakerDeviceId);
+        if (this.isAnonymousUser() && this.anonymousNameFiled.value.trim().length <= 0)
+            return;
+
+        $("[name=cameraId]").val(this.activeCameraDeviceId);
+        $("[name=micId]").val(this.activeMicDeviceId);
+        $("[name=speakerId]").val(this.activeSpeakerDeviceId);
+        $("[name=anonymousUserName]").val(this.anonymousNameFiled.value.trim());
+        $("[name=videoMute]").val(this.videoMuteElem.checked+"");
+        $("[name=audioMute]").val(this.audioMuteElem.checked+"");
+
         $("form").submit();
+    }
+
+    onMeetingResult(meeting: BGMeeting) {
+        const hosts = meeting.Participants.filter(p => p.ParticipantType === ParticipantType.Host);
+        if (hosts.length === 1)
+            this.setOrganizerName(hosts[0].ParticipantName);
+        else
+            this.setOrganizerName("No organizer");
+
+        //anonymous
+        if (this.isAnonymousUser()) {
+            $(this.anonymousNameFiled)
+                .show()
+                .focus()
+                .keyup(_ => {
+                    $(this.startSessionButton).prop('disabled', this.anonymousNameFiled.value.trim().length <= 0);
+                }).keypress((e: any) => {
+                    if ((e.keyCode || e.which) == 13) { //Enter keycode
+                        e.preventDefault();
+                        this.startSession();
+                    }
+                });
+        } else {
+            $(this.anonymousNameFiled).hide();
+            $(this.startSessionButton).prop('disabled', false);
+        }
+
+        this.hidePreloader();
+    }
+
+    onMeetingErrorResult(err: string) {
+        location.href = "/";
+    }
+
+    isAnonymousUser() {
+        return !this.userId || !parseInt(this.userId);
+    }
+
+
+    /***********************************************************************************
+    
+                    Lobby UI methods
+          (not introduced seperate UI class as this is simple class)
+                           
+    ************************************************************************************/
+    setOrganizerName(name: string) {
+        $("#host-name").html(stripHTMLTags(name));
+    }
+
+    hidePreloader() {
+        $("#preloader").css("display", "none");
+        $("#main-wrapper").addClass("show");
     }
 }
 

@@ -6,9 +6,9 @@
 
 
 @section StyleSheets{
-    <link rel="stylesheet" href="~/css/jquery.dataTables.min.css" type="text/css" />
-    <link rel="stylesheet" href="~/css/style.min.css" type="text/css" />
-    <link rel="stylesheet" href="~/css/meeting_list.css" type="text/css" />
+    <link rel="stylesheet" href="~/lib/jquery-datatable/jquery.dataTables.min.css" type="text/css" />
+    <link rel="stylesheet" href="~/css/meeting_list.min.css" type="text/css" />
+    <link rel="stylesheet" href="~/css/meeting_list1.css" type="text/css" />
 }
 <div class="container">
     <div class="header">
@@ -28,6 +28,7 @@
                 <tr>
                     <th>Meeting ID</th>
                     <th>Title</th>
+                    <th>MeetingType</th>
                     <th></th>
                 </tr>
             </thead>
@@ -45,6 +46,6 @@
 @section Scripts{
     <script type="text/javascript" src="~/lib/microsoft-signalr/signalr.min.js"></script>
     <script type="text/javascript" src="~/js/adapter-latest.js"></script>
-    <script type="text/javascript" src="~/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="~/lib/jquery-datatable/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="~/scripts/meeting_list.js"></script>
 }

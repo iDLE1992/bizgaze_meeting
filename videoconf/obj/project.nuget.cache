@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ORcV9NTPizuAxbtY8zt5of/u0/9cdbrrgEyx/WshblaoermReCoi0Ju/TkN1Sm/qZa34gkoqgNxBKQWeciXf1w==",
+  "dgSpecHash": "sWCby76Eg8qv/KdA/JWc6nn5HIWxUEbNBNVYIOUTArUXBKyrj5NbT6pJpT78J+8yN2a2hbKyFeegPAdZuas7cw==",
   "success": true,
-  "projectFilePath": "F:\\1_india_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj",
+  "projectFilePath": "F:\\1_Bizgaze_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\iDLE\\.nuget\\packages\\dnsclient\\1.4.0\\dnsclient.1.4.0.nupkg.sha512",
     "C:\\Users\\iDLE\\.nuget\\packages\\microsoft.aspnetcore.hosting.abstractions\\2.2.0\\microsoft.aspnetcore.hosting.abstractions.2.2.0.nupkg.sha512",

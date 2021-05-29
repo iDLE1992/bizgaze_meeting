@@ -9,41 +9,52 @@ namespace BizGazeMeeting.Model
 {
     public class Client
     {
-        public Participant _participant;
-        public Client(Participant participant)
-        {
-            _participant = participant;
-        }
-
         public string connId;
-        public bool joined = false;
-        public string IPAddress;
+        public Participant participant;
+
         public DateTime joinTime;
         public DateTime leaveTime;
+        public string IPAddress;
+
+        public bool anonymous = true;
+        public string anonymousName;
+
+        public bool joined = false;
+
+        public Client(Participant participant)
+        {
+            this.participant = participant;
+            anonymous = false;
+        }
+
+        public Client(string anonymousName)
+        {
+            this.anonymousName = anonymousName;
+            anonymous = true;
+        }
 
         public string Name
         {
-            get
-            {
-                return _participant.ParticipantName;
-            }
+            get { return anonymous ? anonymousName : participant.ParticipantName; }
         }
 
         public bool IsHost
         {
-            get
-            {
-                return _participant.ParticipantType == "Moderator";
-            }
+            get { return anonymous ? false : participant.ParticipantType == ParticipantType.Host;}
         }
 
         public Int64 BGId
         {
-            get { return _participant.ParticipantId; }
+            get { return anonymous ? 0 : participant.ParticipantId; }
         }
 
-
-
+/**
+    * **************************************************************************
+    *              
+    *              User-Concerned Fields 
+    *          
+    * **************************************************************************
+    */
         [Serializable]
         public class ClientInfo
         {

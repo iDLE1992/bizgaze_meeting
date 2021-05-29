@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "F:\\1_india_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj": {}
+    "F:\\1_Bizgaze_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj": {}
   },
   "projects": {
-    "F:\\1_india_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj": {
+    "F:\\1_Bizgaze_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\1_india_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj",
+        "projectUniqueName": "F:\\1_Bizgaze_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj",
         "projectName": "BizGazeMeeting",
-        "projectPath": "F:\\1_india_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj",
+        "projectPath": "F:\\1_Bizgaze_webrtc\\_Project\\bizgaze_meeting\\videoconf\\BizGazeMeeting.csproj",
         "packagesPath": "C:\\Users\\iDLE\\.nuget\\packages\\",
-        "outputPath": "F:\\1_india_webrtc\\_Project\\bizgaze_meeting\\videoconf\\obj\\",
+        "outputPath": "F:\\1_Bizgaze_webrtc\\_Project\\bizgaze_meeting\\videoconf\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackagesFallback\\",

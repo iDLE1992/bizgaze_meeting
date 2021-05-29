@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CommandParam = void 0;
-var CommandParam = /** @class */ (function () {
-    function CommandParam() {
+exports.JitsiCommandParam = void 0;
+var JitsiCommandParam = /** @class */ (function () {
+    function JitsiCommandParam() {
         this.attributes = {};
         this.children = [];
     }
-    return CommandParam;
+    return JitsiCommandParam;
 }());
-exports.CommandParam = CommandParam;
+exports.JitsiCommandParam = JitsiCommandParam;
 //# sourceMappingURL=CommandParam.js.map

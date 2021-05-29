@@ -42,9 +42,9 @@ namespace BizGazeMeeting.Server
             await Clients.OthersInGroup(roomId.ToString()).SendAsync(proc, param);
         }
 
-        public async Task SendMessageToCaller(string proc, object param1 = null, object param2 = null)
+        public async Task SendMessageToCaller(string proc, object param1 = null, object param2 = null, object param3=null)
         {
-            await Clients.Caller.SendAsync(proc, param1, param2);
+            await Clients.Caller.SendAsync(proc, param1, param2, param3);
         }
         public async Task SendMessage(string proc, string sourceId, string destId, object param1 = null, object param2 = null)
         {

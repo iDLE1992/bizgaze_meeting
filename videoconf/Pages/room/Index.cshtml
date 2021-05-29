@@ -7,11 +7,13 @@
 
 
 @section StyleSheets{
-    <link rel="stylesheet" href="~/css/jquery.dataTables.min.css" type="text/css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" />
+    <link href="~/lib/metronic/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
+    <link href="~/lib/metronic/css/style.bundle.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="~/css/conf.css" />
     <link rel="stylesheet" href="~/css/log.css" />
-
 }
+
 
 <div id="content" style="height: 100%; " class="d-flex">
     <div class="subject">
@@ -25,7 +27,7 @@
     <div id="video-panel" class="justify-content-center align-self-center"></div>
     <div class="sideToolbarContainer slideInExt invisible" id="sideToolbarContainer">
         <div class="chat-header">
-            <div class="jitsi-icon ">
+            <div class="jitsi-icon chat-close-button">
                 <svg height="22" width="22" viewBox="0 0 24 24">
                     <path d="M18.984 6.422L13.406 12l5.578 5.578-1.406 1.406L12 13.406l-5.578 5.578-1.406-1.406L10.594 12 5.016 6.422l1.406-1.406L12 10.594l5.578-5.578z"></path>
                 </svg>
@@ -179,12 +181,12 @@
                                     <div class="toolbox-icon">
                                         <div class="jitsi-icon ">
                                             <svg height="22" width="22" viewBox="0 0 22 22">
-                                                <path fill-rule="evenodd" clip-rule="evenodd" d="M7.333 8.65V11a3.668 3.668 0 002.757 3.553.928.928 0 00-.007.114v1.757A5.501 5.501 0 015.5 11a.917.917 0 10-1.833 0c0 3.74 2.799 6.826 6.416 7.277v.973a.917.917 0 001.834 0v-.973a7.297 7.297 0 003.568-1.475l3.091 3.092a.932.932 0 101.318-1.318l-3.091-3.091.01-.013-1.311-1.311-.01.013-1.325-1.325.008-.014-1.395-1.395a1.24 1.24 0 01-.004.018l-3.61-3.609v-.023L7.334 5.993v.023l-3.909-3.91a.932.932 0 10-1.318 1.318L7.333 8.65zm1.834 1.834V11a1.833 1.833 0 002.291 1.776l-2.291-2.292zm3.682 3.683c-.29.17-.606.3-.94.386a.928.928 0 01.008.114v1.757a5.47 5.47 0 002.257-.932l-1.325-1.325zm1.818-3.476l-1.834-1.834V5.5a1.833 1.833 0 00-3.644-.287l-1.43-1.43A3.666 3.666 0 0114.667 5.5v5.19zm1.665 1.665l1.447 1.447c.357-.864.554-1.81.554-2.803a.917.917 0 10-1.833 0c0 .468-.058.922-.168 1.356z"></path>
+                                                <path fill-rule="evenodd" clip-rule="evenodd" d="M16 6a4 4 0 00-8 0v6a4.002 4.002 0 003.008 3.876c-.005.04-.008.082-.008.124v1.917A6.002 6.002 0 016 12a1 1 0 10-2 0 8.001 8.001 0 007 7.938V21a1 1 0 102 0v-1.062A8.001 8.001 0 0020 12a1 1 0 10-2 0 6.002 6.002 0 01-5 5.917V16c0-.042-.003-.083-.008-.124A4.002 4.002 0 0016 12V6zm-4-2a2 2 0 00-2 2v6a2 2 0 104 0V6a2 2 0 00-2-2z"></path>
                                             </svg>
                                         </div>
                                     </div>
                                 </div>
-                                <span class="ctooltiptext">Mute / Unmute</span>
+                                <span class="ctooltiptext">Mute/Unmute your Microphone</span>
                             </div>
                         </div>
                     </div>
@@ -200,7 +202,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <span class="ctooltiptext">Start / Stop camera</span>
+                                <span class="ctooltiptext">Start/Stop your camera</span>
                             </div>
                         </div>
                     </div>
@@ -236,11 +238,24 @@
                                         <svg fill="none" height="22" width="22" viewBox="0 0 22 22">
                                             <path clip-rule="evenodd" d="M15.583 20.196c.507 0 .917-.41.917-.917v-4.612h2.75c.506 0 .917-.41.917-.917v-11a.917.917 0 00-.917-.917H2.75a.917.917 0 00-.917.917v11c0 .506.41.917.917.917h7.843l4.283 5.195a.917.917 0 00.707.334zM3.667 3.666h14.666v9.167h-3.666v3.893l-3.21-3.893h-7.79V3.667z"></path>
                                         </svg>
+                                        <span class="badge badge-circle badge-light-primary chat-badge">5</span>
                                     </div>
                                 </div>
                             </div>
                             <span class="ctooltiptext">Open / Close chat</span>
                         </div>
+                    </div>
+                    <div id="setting" data-toggle="toggle" class="setting ctooltip toolbox-button" role="button" tabindex="0">
+                        <div>
+                            <div class="toolbox-icon ">
+                                <div class="jitsi-icon ">
+                                    <svg fill="none" height="22" width="22" viewBox="0 0 22 22">
+                                        <path clip-rule="evenodd" d="M9.005 2.17l-.576 1.727-.634.262-1.628-.813a1.833 1.833 0 00-2.116.343l-.362.362a1.833 1.833 0 00-.343 2.116l.816 1.624-.265.638-1.727.576c-.748.25-1.253.95-1.253 1.739v.512c0 .79.505 1.49 1.253 1.74l1.727.575.262.634-.813 1.628a1.833 1.833 0 00.343 2.116l.362.362c.558.558 1.41.696 2.116.343l1.624-.816.638.265.576 1.727c.25.748.95 1.253 1.739 1.253h.512c.79 0 1.49-.505 1.74-1.253l.575-1.726.634-.263 1.628.813a1.833 1.833 0 002.116-.343l.362-.362c.558-.558.696-1.41.343-2.116l-.816-1.624.265-.638 1.727-.576a1.833 1.833 0 001.253-1.739v-.512c0-.79-.505-1.49-1.253-1.74l-1.726-.572-.264-.637.814-1.628a1.833 1.833 0 00-.343-2.116l-.362-.362a1.833 1.833 0 00-2.116-.343l-1.624.816-.638-.265-.576-1.727a1.833 1.833 0 00-1.74-1.253h-.511c-.79 0-1.49.505-1.74 1.253zM7.723 6.173l2.181-.903.84-2.52h.512l.84 2.52 2.185.908 2.372-1.193.362.362-1.188 2.376.903 2.185 2.52.836v.512l-2.52.84-.908 2.185 1.193 2.372-.362.362-2.376-1.188-2.181.903-.84 2.52h-.512l-.84-2.52-2.185-.908-2.372 1.193-.362-.362 1.188-2.376-.903-2.181-2.52-.84v-.512l2.52-.84.908-2.185-1.193-2.372.362-.362 2.376 1.188zM11 15.583a4.583 4.583 0 110-9.166 4.583 4.583 0 010 9.166zM13.75 11a2.75 2.75 0 11-5.5 0 2.75 2.75 0 015.5 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="ctooltiptext">Start / Stop record</span>
                     </div>
                     <div id="leave" data-toggle="toggle" class="ctooltip toolbox-button" tabindex="0" role="button">
                         <div>
@@ -261,23 +276,129 @@
     </div>
 
 </div>
+
+<div class="setting-dialog-wrapper">
+    <!-- Button trigger modal-->
+    <button type="button" class="btn btn-primary d-none" data-toggle="modal" data-target="#settingModal">Launch Setting Dialog</button>
+    <!-- Modal-->
+    <div class="modal setting-dialog fade" id="settingModal" style="display:none" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="sModalLabel" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered mw-650px" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span class="modal-title" id="exampleModalLabel">Device Setting</span>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <svg height="22" width="22" viewBox="0 0 24 24">
+                            <path d="M18.984 6.422L13.406 12l5.578 5.578-1.406 1.406L12 13.406l-5.578 5.578-1.406-1.406L10.594 12 5.016 6.422l1.406-1.406L12 10.594l5.578-5.578z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-7 video-container rounded-left">
+                                <video autoplay playsinline class="rounded-left shadow-sm  w-100" novalidate="novalidate" id="camera-preview">
+                                </video>
+                            </div>
+                            <div class="col-md-5 device-list-container rounded-right">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <h1 class="d-flex flex-center mb-10">Choose Device</h1>
+                                    </div>
+
+                                    <div class="col-sm-12">
+                                        <label class="form-label fw-bolder fs-6 mt-3">Camera</label>
+                                        <select id="camera-list" class="form-select form-select-solid form-select-sm" data-control="select2" data-hide-search="true" data-placeholder="Choose Camera">
+                                        </select>
+                                    </div>
+
+                                    <div class="col-sm-12">
+                                        <label class="form-label fw-bolder fs-6 mt-3">Mircrophone</label>
+                                        <select id="mic-list" class="form-select form-select-solid form-select-sm" data-control="select2" data-hide-search="true" data-placeholder="Choose Camera">
+                                        </select>
+
+                                        <video autoplay playsinline class="rounded shadow-sm  w-100 mb-1 d-none" novalidate="novalidate" id="mic-preview">
+                                        </video>
+                                    </div>
+
+                                    <div class="col-sm-12">
+                                        <label class="form-label fw-bolder fs-6 mt-3">Speaker</label>
+                                        <select id="speaker-list" class="form-select form-select-solid form-select-sm" data-control="select2" data-hide-search="true" data-placeholder="Choose Camera">
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-12">
+                                        <button type="button" id="setting-dialog-ok-button" class="btn btn-lg btn-primary mt-8 d-block m-auto">
+                                            <span class="indicator-label">Close</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="setting-dialog-cancel-button" type="button" class="btn btn-light-primary font-weight-bold" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="open-participants-toggle" class="btn btn-sm btn-white btn-active-primary shadow-sm position-fixed px-5 fw-bolder zindex-2 top-50 mt-10 end-0 transform-90" title="" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-trigger="hover" data-bs-original-title="">
+    <span>Participants</span>
+</button>
+
+<div id="participants-list" class="drawer drawer-end" data-kt-drawer="true" data-kt-drawer-name="explore" data-kt-drawer-activate="true" data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'lg': '375px'}" data-kt-drawer-direction="end" data-kt-drawer-toggle="#open-participants-toggle" data-kt-drawer-close="#participants-list-close" style="width: 375px !important;">
+
+    <div class="card shadow-none w-100">
+
+        <div class="card-header" id="participants-list-header">
+            <h3 class="card-title fw-bolder text-white">Meeting Participants(<span id="participant-count">0</span>)</h3>
+            <div class="card-toolbar">
+                <button type="button" class="btn btn-sm btn-icon btn-active-light-primary me-n5" id="participants-list-close">
+                    <span class="svg-icon svg-icon-2">
+                        <svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                            <g transform="translate(12.000000, 12.000000) rotate(-45.000000) translate(-12.000000, -12.000000) translate(4.000000, 4.000000)" fill="#000000">
+                                <rect fill="#000000" x="0" y="7" width="16" height="2" rx="1"></rect>
+                                <rect fill="#000000" opacity="0.5" transform="translate(8.000000, 8.000000) rotate(-270.000000) translate(-8.000000, -8.000000)" x="0" y="7" width="16" height="2" rx="1"></rect>
+                            </g>
+                        </svg>
+                    </span>
+
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body" id="participants-list-body">
+            
+        </div>
+
+        <div class="card-footer py-5 text-center" id="participants-list-footer">
+            <a class="btn btn-primary">Mute All</a>
+        </div>
+    </div>
+</div>
+
 <form id="return" method="get" action="/"></form>
 
 @section Scripts{
     <script type="text/javascript" src="~/lib/microsoft-signalr/signalr.min.js"></script>
     <script type="text/javascript" src="~/js/adapter-latest.js"></script>
-    <script type="text/javascript" src="~/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="~/scripts/meeting_ui.js"></script>
-    <script type="text/javascript" src="~/scripts/peerconnection.js"></script>
     <script type="text/javascript" src="~/lib/jitsi/lib-jitsi-meet.min.js"></script>
     <script type="text/javascript">
-        window.JitsiMeetJS = JitsiMeetJS;
+    window.JitsiMeetJS = JitsiMeetJS;
 
-        window._roomId = '@Model._meetingId';
-        window._userId = '@Model._userId';
-        window._camId = '@Model._camId';
-        window._micId = '@Model._micId';
-        window._speakerId = '@Model._speakerId';
+    window._roomId = '@Model._meetingId';
+    window._userId = '@Model._userId';
+    window._anonymousUserName = '@Model._anonymousUserName';
+    window._camId = '@Model._camId';
+    window._micId = '@Model._micId';
+    window._speakerId = '@Model._speakerId';
+    window._videoMute = '@Model._videoMute';
+    window._audioMute = '@Model._audioMute';
     </script>
+
+    <script src="~/lib/metronic/plugins/global/plugins.bundle.js"></script>
+    <script src="~/lib/metronic/js/scripts.bundle.js"></script>
     <script type="text/javascript" src="~/scripts/meeting.js"></script>
 }

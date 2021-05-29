@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var signalR = require("@microsoft/signalr");
+var MeetingType_1 = require("./enum/MeetingType");
 var connection = new signalR.HubConnectionBuilder().withUrl("/BizGazeMeetingServer").build();
 var meetingTable = document.getElementById('meetingTable');
 var connectionStatusMessage = document.getElementById('connectionStatusMessage');
@@ -10,7 +11,8 @@ var hasRoomJoined = false;
 $(meetingTable).DataTable({
     columns: [
         { data: 'RoomId', "width": "30%" },
-        { data: 'Name', "width": "50%" },
+        { data: 'Name', "width": "40%" },
+        { data: 'ConferenceType', "width": "15%" },
         { data: 'Button', "width": "15%" }
     ],
     "lengthChange": false,
@@ -57,9 +59,20 @@ $('#meetingTable tbody').on('click', 'button', function () {
     else {
         var rowdata = $(meetingTable).DataTable().row($(this).parents('tr')).data();
         var meetingId = parseInt(rowdata.RoomId);
+        var meetingType = rowdata.ConferenceType;
         var userId = parseInt($(this).attr('id'));
-        if (meetingId != NaN && meetingId > 0)
-            joinMeeting(meetingId, userId);
+        if (meetingId === NaN)
+            return;
+        if (meetingType == MeetingType_1.MeetingType.Open) {
+            if (!userId)
+                joinMeetingAsAnonymous(meetingId);
+            else
+                joinMeeting(meetingId, userId);
+        }
+        else if (meetingType == MeetingType_1.MeetingType.Closed) {
+            if (userId !== NaN)
+                joinMeeting(meetingId, userId);
+        }
     }
 });
 function createMeeting(meetingTitle) {
@@ -68,6 +81,9 @@ function createMeeting(meetingTitle) {
     });
 }
 function joinMeeting(meetingId, userId) {
-    location.href = "/room/" + meetingId + "/user/" + userId;
+    location.href = "/lobby/" + meetingId + "/" + userId;
+}
+function joinMeetingAsAnonymous(meetingId) {
+    location.href = "/lobby/" + meetingId;
 }
 //# sourceMappingURL=meeting_list.js.map

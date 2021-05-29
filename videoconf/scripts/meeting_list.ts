@@ -1,5 +1,6 @@
 ﻿"use strict";
 import * as signalR from "@microsoft/signalr";
+import { MeetingType } from "./enum/MeetingType";
 const connection: signalR.HubConnection = new signalR.HubConnectionBuilder().withUrl("/BizGazeMeetingServer").build();
 
 const meetingTable = document.getElementById('meetingTable');
@@ -12,7 +13,8 @@ let hasRoomJoined: boolean = false;
 $(meetingTable).DataTable({
     columns: [
         { data: 'RoomId', "width": "30%" },
-        { data: 'Name', "width": "50%" },
+        { data: 'Name', "width": "40%" },
+        { data: 'ConferenceType', "width": "15%" },
         { data: 'Button', "width": "15%" }
     ],
     "lengthChange": false,
@@ -65,9 +67,17 @@ $('#meetingTable tbody').on('click', 'button', function () {
     } else {
         const rowdata: any = $(meetingTable).DataTable().row($(this).parents('tr')).data();
         const meetingId = parseInt(rowdata.RoomId);
+        const meetingType = rowdata.ConferenceType;
         const userId = parseInt($(this).attr('id'));
-        if (meetingId != NaN && meetingId > 0 )
-            joinMeeting(meetingId, userId);
+
+        if (meetingId === NaN) return;
+
+        if (meetingType == MeetingType.Open) {
+            if (!userId) joinMeetingAsAnonymous(meetingId);
+            else joinMeeting(meetingId, userId);
+        } else if (meetingType == MeetingType.Closed) {
+            if (userId !== NaN) joinMeeting(meetingId, userId);
+        }
     }
 });
 
@@ -78,5 +88,9 @@ function createMeeting(meetingTitle: string) {
 }
 
 function joinMeeting(meetingId: number, userId: number) {
-    location.href = `/lobby/${meetingId}/user/${userId}`;
+    location.href = `/lobby/${meetingId}/${userId}`;
+}
+
+function joinMeetingAsAnonymous(meetingId: number) {
+    location.href = `/lobby/${meetingId}`;
 }

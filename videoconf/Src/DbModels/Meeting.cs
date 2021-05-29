@@ -32,8 +32,11 @@ namespace BizGazeMeeting.DbModels
         [BsonElement("Participants")]
         public List<Participant> Participants { get; set; }
 
-        [BsonElement("ConferenceTypeId")]
-        public string ConferenceTypeId { get; set; }
+        [BsonElement("ConferenceType")]
+        public string ConferenceType { get; set;}
+
+        [BsonElement("ChannelType")]
+        public string ChannelType { get; set; }
 
         [BsonElement("CallbackUrl")]
         public string CallbackUrl { get; set; }

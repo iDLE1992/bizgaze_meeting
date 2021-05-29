@@ -40,8 +40,14 @@ namespace BizGazeMeeting
             });
             services.AddSignalR();
 
-            //test api
-            services.AddControllers();
+            services.AddControllers()
+                    .AddJsonOptions(options =>
+                    {
+                        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+                        options.JsonSerializerOptions.DictionaryKeyPolicy = null;
+
+                    });
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "BizGazeMeeting", Version = "v1" });

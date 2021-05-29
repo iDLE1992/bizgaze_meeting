@@ -19,9 +19,12 @@
 *****************************************************************/
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MeetingUI = void 0;
-var vector_icon_1 = require("./vector_icon");
-var MediaType_1 = require("./jitsi/MediaType");
-var UserProperty_1 = require("./jitsi/UserProperty");
+var vector_icon_1 = require("./components/vector_icon");
+var MediaType_1 = require("./enum/MediaType");
+var UserProperty_1 = require("./enum/UserProperty");
+var SettingDialog_1 = require("./components/SettingDialog");
+var ChattingPanel_1 = require("./components/ChattingPanel");
+var ParticipantListPanel_1 = require("./components/ParticipantListPanel");
 var PanelVideoState;
 (function (PanelVideoState) {
     PanelVideoState["NoCamera"] = "no-camera";
@@ -60,20 +63,25 @@ var MeetingUI = /** @class */ (function () {
         this.toolbarRecordButtonElement = document.querySelector("#record");
         this.toolbarChatButtonElement = document.querySelector("#chat");
         this.toolbarLeaveButtonElement = document.querySelector("#leave");
+        this.toolbarSettingButtonElement = document.querySelector("#setting");
         this.subjectElement = document.querySelector(".subject-text");
         this.timestampElement = document.querySelector(".subject-timer");
         this.topInfobarElement = document.querySelector(".subject");
+        this.userListToggleButtonElement = document.querySelector("#open-participants-toggle");
         this.registerEventHandlers();
-        this.registerExternalCallbacks();
+        this.chattingPanel = new ChattingPanel_1.ChattingPanel();
+        var props = new ChattingPanel_1.ChattingPanelProps();
+        props.chatOpenButton = this.toolbarChatButtonElement;
+        props.unreadBadgeElement = document.querySelector(".chat-badge");
+        props.openCallback = this.refreshCardViews.bind(this);
+        props.sendChat = this.meeting.sendChatMessage.bind(this.meeting);
+        this.chattingPanel.init(props);
+        this.participantsListPanel = new ParticipantListPanel_1.ParticipantListPanel();
+        var lProps = new ParticipantListPanel_1.ParticipantListPanelProps();
+        lProps.onUseCamera = this.meeting.allowCamera.bind(this.meeting);
+        lProps.onUseMic = this.meeting.allowMic.bind(this.meeting);
+        this.participantsListPanel.init(lProps);
     }
-    MeetingUI.prototype.registerExternalCallbacks = function () {
-        var _this_1 = this;
-        $(document).ready(function () {
-            $(_this_1.toolbarLeaveButtonElement).click(function () {
-                _this_1.meeting.stop();
-            });
-        });
-    };
     MeetingUI.prototype.registerEventHandlers = function () {
         var _this_1 = this;
         $(window).resize(function () {
@@ -85,17 +93,27 @@ var MeetingUI = /** @class */ (function () {
         $(document).ready(function () {
             _this_1.refreshCardViews();
             var _this = _this_1;
-            $("#content").hover(function () {
+            $(_this_1.toolbarLeaveButtonElement).click(function () {
+                _this_1.meeting.stop();
+            });
+            if (_this_1.meeting.config.hideToolbarOnMouseOut) {
+                $("#content").hover(function (_) {
+                    $(_this_1.toolbarElement).addClass("visible");
+                    if (_this_1.initTopInfo)
+                        $(_this_1.topInfobarElement).addClass("visible");
+                }, function (_) {
+                    $(_this_1.toolbarElement).removeClass("visible");
+                    if (_this_1.initTopInfo)
+                        $(_this_1.topInfobarElement).removeClass("visible");
+                }).click(function () {
+                    $("." + _this_1.popupMenuClass).removeClass("visible");
+                });
+            }
+            else {
                 $(_this_1.toolbarElement).addClass("visible");
                 if (_this_1.initTopInfo)
                     $(_this_1.topInfobarElement).addClass("visible");
-            }, function () {
-                $(_this_1.toolbarElement).removeClass("visible");
-                if (_this_1.initTopInfo)
-                    $(_this_1.topInfobarElement).removeClass("visible");
-            }).click(function () {
-                $("." + _this_1.popupMenuClass).removeClass("visible");
-            });
+            }
             $("#mic-enable").click(function () {
                 _this_1.meeting.OnToggleMuteMyAudio();
                 /*var el = $(this).find(".toolbox-icon");
@@ -119,82 +137,8 @@ var MeetingUI = /** @class */ (function () {
                     el.find("path").attr("d", "M13.75 5.5H3.667c-1.013 0-1.834.82-1.834 1.833v7.334c0 1.012.821 1.833 1.834 1.833H13.75c1.012 0 1.833-.82 1.833-1.833v-.786l3.212 1.835a.916.916 0 001.372-.796V7.08a.917.917 0 00-1.372-.796l-3.212 1.835v-.786c0-1.012-.82-1.833-1.833-1.833zm0 3.667v5.5H3.667V7.333H13.75v1.834zm4.583 4.174l-2.75-1.572v-1.538l2.75-1.572v4.682z");
                 }*/
             });
-            $("#share").click(function () {
-                var el = $(this).find(".toolbox-icon");
-                el.toggleClass("toggled");
-                if (el.hasClass("toggled")) {
-                }
-                else {
-                }
-            });
-            $(_this_1.toolbarChatButtonElement).on('click', function () {
-                var el = $(this).find(".toolbox-icon");
-                el.toggleClass("toggled");
-                if (el.hasClass("toggled")) {
-                    $("#video-panel").addClass("shift-right");
-                    $("#new-toolbox").addClass("shift-right");
-                    $("#sideToolbarContainer").removeClass("invisible");
-                    $("#usermsg").focus();
-                }
-                else {
-                    $("#video-panel").removeClass("shift-right");
-                    $("#new-toolbox").removeClass("shift-right");
-                    $("#sideToolbarContainer").addClass("invisible");
-                }
-                _this.refreshCardViews();
-            });
-            $(".chat-header .jitsi-icon").click(function () {
-                $("#chat").find(".toolbox-icon").removeClass("toggled");
-                $("#video-panel").removeClass("shift-right");
-                $("#new-toolbox").removeClass("shift-right");
-                $("#sideToolbarContainer").addClass("invisible");
-                _this.refreshCardViews();
-            });
-            $("#usermsg").keypress(function (e) {
-                if ((e.keyCode || e.which) == 13) { //Enter keycode
-                    if (e.shiftKey) {
-                        return;
-                    }
-                    e.preventDefault();
-                    var sms = $(this).val().toString().trim();
-                    $(this).val('');
-                    if (sms == '') {
-                        return;
-                    }
-                    sms = _this.emonameToEmoicon(sms);
-                    var time = _this.getCurTime();
-                    var sel = $("#chatconversation div.chat-message-group:last-child");
-                    if (sel.hasClass("local")) {
-                        sel.find(".timestamp").remove();
-                        sel.append('<div class= "chatmessage-wrapper" >\
-                                                <div class="chatmessage ">\
-                                                    <div class="replywrapper">\
-                                                        <div class="messagecontent">\
-                                                            <div class="usermessage">' + sms + '</div>\
-                                                        </div>\
-                                                    </div>\
-                                                </div>\
-                                                <div class="timestamp">' + time + '</div>\
-                                            </div >');
-                    }
-                    else {
-                        $("#chatconversation").append('<div class="chat-message-group local"> \
-                                                        <div class= "chatmessage-wrapper" >\
-                                                                <div class="chatmessage ">\
-                                                                    <div class="replywrapper">\
-                                                                        <div class="messagecontent">\
-                                                                            <div class="usermessage">' + sms + '</div>\
-                                                                        </div>\
-                                                                    </div>\
-                                                                </div>\
-                                                                <div class="timestamp">' + time + '</div>\
-                                                            </div >\
-                                                        </div>');
-                    }
-                    _this.scrollToBottom();
-                    // send sms to remote
-                    _this.meeting.sendChatMessage(sms);
-                }
+            $(_this_1.toolbarChatButtonElement).on('click', function (_) {
+                _this_1.chattingPanel.toggleOpen();
             });
             $(_this_1.toolbarDesktopShareButtonElement).on("click", function () {
                 _this_1.meeting.toggleScreenShare();
@@ -202,29 +146,8 @@ var MeetingUI = /** @class */ (function () {
             $(_this_1.toolbarRecordButtonElement).on('click', function () {
                 _this_1.meeting.toggleRecording();
             });
-            $(".smileyContainer").click(function () {
-                var id = $(this).attr("id");
-                var imoname = _this.idToEmoname(id);
-                console.log(imoname);
-                var sendel = $("#usermsg");
-                var sms = sendel.val();
-                sms += imoname;
-                sendel.val(sms);
-                var el = $(".smileys-panel");
-                el.removeClass("show-smileys");
-                el.addClass("hide-smileys");
-                sendel.focus();
-            });
-            $("#smileys").click(function () {
-                var el = $(".smileys-panel");
-                if (el.hasClass("hide-smileys")) {
-                    el.removeClass("hide-smileys");
-                    el.addClass("show-smileys");
-                }
-                else {
-                    el.removeClass("show-smileys");
-                    el.addClass("hide-smileys");
-                }
+            $(_this_1.toolbarSettingButtonElement).on('click', function () {
+                _this_1.showSettingDialog();
             });
         });
     };
@@ -278,6 +201,9 @@ var MeetingUI = /** @class */ (function () {
     MeetingUI.prototype._getVideoElementFromPanel = function (panel) {
         return $("." + this.videoElementClass, panel)[0];
     };
+    MeetingUI.prototype._getAudioElementFromPanel = function (panel) {
+        return $("audio", panel)[0];
+    };
     MeetingUI.prototype._getShortNameElementFromPanel = function (panel) {
         return $("." + this.shortNameClass, panel)[0];
     };
@@ -305,89 +231,6 @@ var MeetingUI = /** @class */ (function () {
     MeetingUI.prototype._getPopupMenuFullscreenFromPanel = function (panel) {
         return $("li.fullscreen", panel)[0];
     };
-    MeetingUI.prototype.toggleMicrophone = function () {
-        var isDisable = $("#navMicrophoneButton").hasClass('mic-disable');
-        if (isDisable) {
-            $("#navMicrophoneButton").removeClass("mic-disable");
-            $("#navMicrophoneButton img").attr("src", "../img/mic.png");
-        }
-        else {
-            $("#navMicrophoneButton").addClass('mic-disable');
-            $("#navMicrophoneButton img").attr('src', '../img/mute.png');
-        }
-    };
-    MeetingUI.prototype.toggleCamera = function () {
-        var isDisable = $("#navCameraButton").hasClass('camera-disable');
-        if (isDisable) {
-            this.setVideo(0, 1);
-            $("#navCameraButton").removeClass("camera-disable");
-            $("#navCameraButton img").attr("src", "../img/camera.png");
-        }
-        else {
-            this.setVideo(0, 0);
-            $("#navCameraButton").addClass('camera-disable');
-            $("#navCameraButton img").attr('src', '../img/camera-off.png');
-        }
-    };
-    MeetingUI.prototype.toggleChat = function () {
-        var count = $("#layout .p-5-m-auto").length;
-        if (count == 0) {
-        }
-    };
-    MeetingUI.prototype.setAudio = function (index, status) {
-        if (status == 0) { //disable
-            $("#piece-" + index + " img.aud-back").attr("src", "../img/mute.png");
-        }
-        else if (status == 1) { //enable
-            $("#piece-" + index + " img.aud-back").attr("src", "../img/mic.png");
-        }
-        else { // 2 speaking
-            $("#piece-" + index + " img.aud-back").attr("src", "../img/speaking.png");
-        }
-    };
-    MeetingUI.prototype.setAudioStatus = function (index) {
-        if ($("#piece-" + index + " button.mic-button").hasClass('mic-disable')) {
-            $("#piece-" + index + " button.mic-button").removeClass('mic-disable');
-            $("#piece-" + index + " button.mic-button").addClass('mic-enable');
-            this.setAudio(index, 1);
-        }
-        else if ($("#piece-" + index + " button.mic-button").hasClass('mic-enable')) {
-            $("#piece-" + index + " button.mic-button").removeClass('mic-enable');
-            $("#piece-" + index + " button.mic-button").addClass('mic-disable');
-            this.setAudio(index, 0);
-        }
-    };
-    MeetingUI.prototype.setVideo = function (index, status) {
-        if (status == 1) {
-            $("#piece-" + index + " img.vid-back").remove();
-            $("#piece-" + index).append("<video />");
-        }
-        else {
-            $("#piece-" + index + " video").remove();
-            $("#piece-" + index).append("<img src='../img/poster.png' class='vid-back'/>");
-        }
-    };
-    MeetingUI.prototype.activateVideoPanel = function (index, status) {
-        if (status) {
-            $("#piece-" + index + " img.vid-back").remove();
-            $("#piece-" + index).append("<video autoplay playsinline index=\"" + index + "\"/>");
-        }
-        else {
-            $("#piece-" + index + " video").remove();
-            $("#piece-" + index).append("<img src='../img/poster.png' class='vid-back'/>");
-        }
-    };
-    MeetingUI.prototype.activateAudioButton = function (index, status) {
-        if (!status) { //disable
-            $("#piece-" + index + " img.aud-back").attr("src", "../img/mute.png");
-        }
-        else if (status) { //enable
-            $("#piece-" + index + " img.aud-back").attr("src", "../img/mic.png");
-        }
-        else { // 2 speaking
-            $("#piece-" + index + " img.aud-back").attr("src", "../img/speaking.png");
-        }
-    };
     MeetingUI.prototype.getEmptyVideoPanel = function () {
         var panel = this.addNewPanel();
         this.registerPanelEventHandler(panel);
@@ -396,7 +239,23 @@ var MeetingUI = /** @class */ (function () {
         this._getAudioMuteElementFromPanel(panel).style.display = "none";
         this._getModeratorStarElementFromPanel(panel).style.display = "none";
         var videoElem = this._getVideoElementFromPanel(panel);
-        return videoElem;
+        var audioElem = this._getAudioElementFromPanel(panel);
+        return { videoElem: videoElem, audioElem: audioElem };
+    };
+    MeetingUI.prototype.freeVideoPanel = function (videoElement) {
+        var videoCardViews = document.querySelectorAll("video." + this.videoElementClass);
+        var N = videoCardViews.length;
+        var i = 0;
+        for (i = 0; i < N; i++) {
+            if (videoCardViews[i] == videoElement) {
+                var curElem = videoCardViews[i];
+                while (!$(curElem).hasClass(this.panelClass))
+                    curElem = curElem.parentElement;
+                curElem.remove();
+                return;
+            }
+        }
+        this.refreshCardViews();
     };
     MeetingUI.prototype.updatePanelOnJitsiUser = function (videoElem, myInfo, user) {
         var _this_1 = this;
@@ -416,7 +275,7 @@ var MeetingUI = /** @class */ (function () {
         //bottom small icons
         this._getVideoMuteElementFromPanel(panel).style.display = user.isVideoMuted() ? "block" : "none";
         this._getAudioMuteElementFromPanel(panel).style.display = user.isAudioMuted() ? "block" : "none";
-        this._getModeratorStarElementFromPanel(panel).style.display = user.getProperty(UserProperty_1.UserProperty.isModerator) ? "block" : "none";
+        this._getModeratorStarElementFromPanel(panel).style.display = user.getProperty(UserProperty_1.UserProperty.IsHost) ? "block" : "none";
         //popup menu
         var audioMutePopupMenu = this._getPopupMenuAudioMuteFromPanel(panel);
         var videoMutePopupMenu = this._getPopupMenuVideoMuteFromPanel(panel);
@@ -438,7 +297,7 @@ var MeetingUI = /** @class */ (function () {
             audioMutePopupMenu.style.display = "none";
             grantModeratorPopupMenu.style.display = "none";
         }
-        if (user.getProperty(UserProperty_1.UserProperty.isModerator))
+        if (user.getProperty(UserProperty_1.UserProperty.IsHost))
             grantModeratorPopupMenu.style.display = "none";
         //popup menu audio icon/label change
         if (audioMutePopupMenu.style.display === 'flex') {
@@ -481,13 +340,6 @@ var MeetingUI = /** @class */ (function () {
         var panel = this._getPanelFromVideoElement(videoElem);
         if (!panel)
             return;
-        var userHaveCamera = false, userHaveMicrophone = false;
-        localTracks.forEach(function (track) {
-            if (track.getType() === MediaType_1.MediaType.VIDEO)
-                userHaveCamera = true;
-            else if (track.getType() === MediaType_1.MediaType.AUDIO)
-                userHaveMicrophone = true;
-        });
         var audioMuted = false, videoMuted = false;
         localTracks.forEach(function (track) {
             if (track.getType() === MediaType_1.MediaType.VIDEO && track.isMuted())
@@ -509,8 +361,8 @@ var MeetingUI = /** @class */ (function () {
         var videoMutePopupMenu = this._getPopupMenuVideoMuteFromPanel(panel);
         var grantModeratorPopupMenu = this._getPopupMenuGrantModeratorFromPanel(panel);
         if (myInfo.IsHost) {
-            videoMutePopupMenu.style.display = userHaveCamera ? "flex" : "none";
-            audioMutePopupMenu.style.display = userHaveMicrophone ? "flex" : "none";
+            videoMutePopupMenu.style.display = myInfo.useMedia.useCamera ? "flex" : "none";
+            audioMutePopupMenu.style.display = myInfo.useMedia.useMic ? "flex" : "none";
             grantModeratorPopupMenu.style.display = "flex";
         }
         else {
@@ -571,34 +423,40 @@ var MeetingUI = /** @class */ (function () {
         $("text", shortNamePanel).html(this.getShortName(name));
     };
     MeetingUI.prototype.updateToolbar = function (myInfo, localTracks) {
-        var userHaveCamera = false, userHaveMicrophone = false;
-        localTracks.forEach(function (track) {
-            if (track.getType() === MediaType_1.MediaType.VIDEO)
-                userHaveCamera = true;
-            else if (track.getType() === MediaType_1.MediaType.AUDIO)
-                userHaveMicrophone = true;
-        });
         var audioMuted = false, videoMuted = false;
+        var hasAudioTrack = false, hasVideoTrack = false;
         localTracks.forEach(function (track) {
-            if (track.getType() === MediaType_1.MediaType.VIDEO && track.isMuted())
-                videoMuted = true;
-            else if (track.getType() === MediaType_1.MediaType.AUDIO && track.isMuted())
-                audioMuted = true;
+            if (track.getType() === MediaType_1.MediaType.VIDEO) {
+                hasVideoTrack = true;
+                if (track.isMuted())
+                    videoMuted = true;
+            }
+            else if (track.getType() === MediaType_1.MediaType.AUDIO) {
+                hasAudioTrack = true;
+                if (track.isMuted())
+                    audioMuted = true;
+            }
         });
-        this.toolbarVideoButtonElement.style.display = userHaveCamera ? "block" : "none";
-        this.toolbarAudioButtonElement.style.display = userHaveMicrophone ? "block" : "none";
+        this.toolbarVideoButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
+        this.toolbarDesktopShareButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
+        this.toolbarAudioButtonElement.style.display = hasAudioTrack ? "inline-block" : "none";
         if (audioMuted) {
             $(this.toolbarAudioButtonElement).find("path").attr("d", vector_icon_1.VectorIcon.AUDIO_MUTE_ICON);
+            $(this.toolbarAudioButtonElement).addClass("muted");
         }
         else {
             $(this.toolbarAudioButtonElement).find("path").attr("d", vector_icon_1.VectorIcon.AUDIO_UNMUTE_ICON);
+            $(this.toolbarAudioButtonElement).removeClass("muted");
         }
         if (videoMuted) {
             $(this.toolbarVideoButtonElement).find("path").attr("d", vector_icon_1.VectorIcon.VIDEO_MUTE_ICON);
+            $(this.toolbarVideoButtonElement).addClass("muted");
         }
         else {
             $(this.toolbarVideoButtonElement).find("path").attr("d", vector_icon_1.VectorIcon.VIDEO_UNMUTE_ICON);
+            $(this.toolbarVideoButtonElement).removeClass("muted");
         }
+        this.userListToggleButtonElement.style.visibility = (myInfo.IsHost) ? "visible" : "hidden";
     };
     MeetingUI.prototype.setScreenShare = function (on) {
         if (on) {
@@ -622,21 +480,6 @@ var MeetingUI = /** @class */ (function () {
         else
             return fullName.toUpperCase().substr(0, 2);
     };
-    MeetingUI.prototype.freeVideoPanel = function (videoElement) {
-        var videoCardViews = document.querySelectorAll("video." + this.videoElementClass);
-        var N = videoCardViews.length;
-        var i = 0;
-        for (i = 0; i < N; i++) {
-            if (videoCardViews[i] == videoElement) {
-                var curElem = videoCardViews[i];
-                while (!$(curElem).hasClass(this.panelClass))
-                    curElem = curElem.parentElement;
-                curElem.remove();
-                return;
-            }
-        }
-        this.refreshCardViews();
-    };
     MeetingUI.prototype.showModeratorIcon = function (panel, show) {
         this._getModeratorStarElementFromPanel(panel).style.display = show ? "block" : "none";
     };
@@ -648,120 +491,80 @@ var MeetingUI = /** @class */ (function () {
         return videoState;
     };
     MeetingUI.prototype.refreshCardViews = function () {
+        //margin
         var gutter = 40;
         var width = $("#content").width() - gutter;
         var height = $("#content").height() - gutter;
-        var count = $("." + this.panelClass).length;
+        //number of video panels
+        var panelCount = $("." + this.panelClass).length;
+        //chatting dialog
+        var chattingWidth = 315;
         if ($("#video-panel").hasClass("shift-right")) {
-            width -= 315;
+            width -= chattingWidth;
         }
+        //width, height of each video panel
         var w, h;
+        //if fullscreen mode, hide other video panels
         if ($("." + this.panelClass).hasClass(this.fullscreenClass)) {
             $("." + this.panelClass).css("display", "none");
             $("." + this.fullscreenClass).css("display", "inline-block").css("height", height + gutter - 6).css("width", width + gutter);
             return;
         }
+        //show all video panels
         $("." + this.panelClass).css("display", "inline-block");
-        if (count == 1) {
-            if (width * 9 > height * 16) {
-                h = height;
+        var columnCount = 1;
+        var rowCount = 1;
+        var SM = 576;
+        var MD = 768;
+        var LG = 992;
+        var XL = 1200;
+        var XXL = 1400;
+        if (width < SM) {
+            columnCount = 1;
+        }
+        else if (width < LG) {
+            if (panelCount <= 1)
+                columnCount = 1;
+            else
+                columnCount = 2;
+        }
+        else {
+            if (panelCount == 1) {
+                if (width < XXL)
+                    columnCount = 1;
+                else
+                    columnCount = 2;
+            }
+            else if (panelCount <= 4)
+                columnCount = 2;
+            else if (panelCount <= 9)
+                columnCount = 3;
+            else
+                columnCount = 4;
+        }
+        rowCount = Math.floor((panelCount - 1) / columnCount) + 1;
+        if (width < 576) {
+            w = width;
+            h = w * 9 / 16;
+        }
+        else {
+            // 
+            if (width * rowCount * 9 > height * columnCount * 16) {
+                h = height / rowCount;
                 w = h * 16 / 9;
             }
+            //
             else {
-                w = width;
+                w = width / columnCount;
                 h = w * 9 / 16;
             }
         }
-        else if (count == 2) {
-            if (width < 320) {
-                w = width;
-                h = w * 9 / 16;
-                //            console.log("w", w, h);
-            }
-            else {
-                if (width * 9 > height * 16 * 2) {
-                    h = height;
-                    w = h * 16 / 9;
-                }
-                else {
-                    w = width / 2;
-                    h = w * 9 / 16;
-                }
-            }
-        }
-        else if (count > 2 && count < 5) {
-            if (width < 320) {
-                w = width;
-                h = w * 9 / 16;
-            }
-            else {
-                if (width * 9 > height * 16) {
-                    h = height / 2;
-                    w = h * 16 / 9;
-                }
-                else {
-                    w = width / 2;
-                    h = w * 9 / 16;
-                }
-            }
-        }
-        else if (count >= 5 && count < 7) {
-            if (width < 320) {
-                w = width;
-                h = w * 9 / 16;
-            }
-            else if (width >= 320 && width < 1000) {
-                if (width * 9 / 2 > height * 16 / 3) { // w*h= 2*3 
-                    h = height / 3;
-                    w = h * 16 / 9;
-                    //console.log("h", w, h);
-                }
-                else {
-                    w = width / 2;
-                    h = w * 9 / 16;
-                    //console.log("w", w, h);
-                }
-            }
-            else {
-                if (width * 9 / 3 > height * 16 / 2) { // w*h= 2*3
-                    h = height / 2;
-                    w = h * 16 / 9;
-                }
-                else {
-                    w = width / 3;
-                    h = w * 9 / 16;
-                }
-            }
-        }
-        else if (count >= 7 && count < 10) {
-            if (width < 320) {
-                w = width;
-                h = w * 9 / 16;
-            }
-            else if (width >= 320 && width < 1000) {
-                if (width * 9 / 2 > height * 16 / 4) { // w*h= 2*4
-                    h = height / 4;
-                    w = h * 16 / 9;
-                    //console.log("h", w, h);
-                }
-                else {
-                    w = width / 2;
-                    h = w * 9 / 16;
-                    //console.log("w", w, h);
-                }
-            }
-            else {
-                if (width * 9 / 3 > height * 16 / 3) { // w*h= 2*3
-                    h = height / 3;
-                    w = h * 16 / 9;
-                }
-                else {
-                    w = width / 3;
-                    h = w * 9 / 16;
-                }
-            }
-        }
-        $("." + this.panelClass).css("width", w).css("height", h).find(".avatar-container").css("width", h / 2).css("height", h / 2);
+        $("." + this.panelClass)
+            .css("width", w)
+            .css("height", h)
+            .find(".avatar-container")
+            .css("width", h / 2)
+            .css("height", h / 2);
     };
     MeetingUI.prototype.addNewPanel = function () {
         var count = $("." + this.panelClass).length;
@@ -769,14 +572,15 @@ var MeetingUI = /** @class */ (function () {
             return;
         var isSpeak = false;
         var isDisableCamera = true;
-        var isMute = true;
         var activeSpeaker = '';
         if (isSpeak) {
             activeSpeaker = "active-speaker";
         }
         var avatarVisible = '';
         var cameraStatus = '';
-        var videoTag = '';
+        ++this.nPanelInstanceId;
+        var videoTag = "<video autoplay playsinline  class='" + this.videoElementClass + "' id='remoteVideo_" + this.nPanelInstanceId + "'></video>";
+        var audioTag = "<audio autoplay=\"\" id=\"remoteAudio_" + this.nPanelInstanceId + "\"></audio>";
         if (isDisableCamera) {
             avatarVisible = 'visible';
             cameraStatus = '<div class="indicator-container videoMuted"> \
@@ -790,15 +594,8 @@ var MeetingUI = /** @class */ (function () {
                                 </span> \
                             </div> \
                         </div>';
-            videoTag = "<video autoplay playsinline  class='" + this.videoElementClass + "' id='remoteVideo_" + ++this.nPanelInstanceId + "'></video>";
         }
-        else {
-            videoTag = "<video autoplay playsinline  class='" + this.videoElementClass + "'  id=\"remoteVideo_" + ++this.nPanelInstanceId + "\"></video>"; //set camera parameter;
-        }
-        var micStatus = '';
-        var audioTag = '';
-        if (isMute) {
-            micStatus = '<div class="indicator-container audioMuted"> \
+        var micStatus = '<div class="indicator-container audioMuted"> \
                             <div> \
                                 <span class="indicator-icon-container  toolbar-icon" id=""> \
                                     <div class="jitsi-icon "> \
@@ -809,11 +606,6 @@ var MeetingUI = /** @class */ (function () {
                                 </span> \
                             </div> \
                         </div>';
-            audioTag = '<audio></audio>';
-        }
-        else {
-            audioTag = '<audio autoplay="" id="remoteAudio_"></audio>';
-        }
         var moderatorStatus = '<div class="moderator-icon right"> \
                                 <div class="indicator-container"> \
                                     <div> \
@@ -847,114 +639,6 @@ var MeetingUI = /** @class */ (function () {
             scrollTop: 20000
         }, 200);
     };
-    MeetingUI.prototype.idToEmoname = function (id) {
-        if (id == 'smiley1')
-            return ':)';
-        if (id == 'smiley2')
-            return ':(';
-        if (id == 'smiley3')
-            return ':D';
-        if (id == 'smiley4')
-            return ':+1:';
-        if (id == 'smiley5')
-            return ':P';
-        if (id == 'smiley6')
-            return ':wave:';
-        if (id == 'smiley7')
-            return ':blush:';
-        if (id == 'smiley8')
-            return ':slightly_smiling_face:';
-        if (id == 'smiley9')
-            return ':scream:';
-        if (id == 'smiley10')
-            return ':*';
-        if (id == 'smiley11')
-            return ':-1:';
-        if (id == 'smiley12')
-            return ':mag:';
-        if (id == 'smiley13')
-            return ':heart:';
-        if (id == 'smiley14')
-            return ':innocent:';
-        if (id == 'smiley15')
-            return ':angry:';
-        if (id == 'smiley16')
-            return ':angel:';
-        if (id == 'smiley17')
-            return ';(';
-        if (id == 'smiley18')
-            return ':clap:';
-        if (id == 'smiley19')
-            return ';)';
-        if (id == 'smiley20')
-            return ':beer:';
-    };
-    MeetingUI.prototype.emonameToEmoicon = function (sms) {
-        var smsout = sms;
-        smsout = smsout.replace(':)', '<span class="smiley" style="width: 20px; height:20px;">😃</span>');
-        smsout = smsout.replace(':(', '<span class="smiley">😦</span>');
-        smsout = smsout.replace(':D', '<span class="smiley">😄</span>');
-        smsout = smsout.replace(':+1:', '<span class="smiley">👍</span>');
-        smsout = smsout.replace(':P', '<span class="smiley">😛</span>');
-        smsout = smsout.replace(':wave:', '<span class="smiley">👋</span>');
-        smsout = smsout.replace(':blush:', '<span class="smiley">😊</span>');
-        smsout = smsout.replace(':slightly_smiling_face:', '<span class="smiley">🙂</span>');
-        smsout = smsout.replace(':scream:', '<span class="smiley">😱</span>');
-        smsout = smsout.replace(':*', '<span class="smiley">😗</span>');
-        smsout = smsout.replace(':-1:', '<span class="smiley">👎</span>');
-        smsout = smsout.replace(':mag:', '<span class="smiley">🔍</span>');
-        smsout = smsout.replace(':heart:', '<span class="smiley">❤️</span>');
-        smsout = smsout.replace(':innocent:', '<span class="smiley">😇</span>');
-        smsout = smsout.replace(':angry:', '<span class="smiley">😠</span>');
-        smsout = smsout.replace(':angel:', '<span class="smiley">👼</span>');
-        smsout = smsout.replace(';(', '<span class="smiley">😭</span>');
-        smsout = smsout.replace(':clap:', '<span class="smiley">👏</span>');
-        smsout = smsout.replace(';)', '<span class="smiley">😉</span>');
-        smsout = smsout.replace(':beer:', '<span class="smiley">🍺</span>');
-        return smsout;
-    };
-    MeetingUI.prototype.getCurTime = function () {
-        var date = new Date();
-        var h = date.getHours();
-        var m = date.getMinutes();
-        var m_2 = ("0" + m).slice(-2);
-        var h_2 = ("0" + h).slice(-2);
-        var time = h_2 + ":" + m_2;
-        return time;
-    };
-    MeetingUI.prototype.scrollToBottom = function () {
-        var overheight = 0;
-        $(".chat-message-group").each(function () {
-            overheight += $(this).height();
-        });
-        var limit = $('#chatconversation').height();
-        var pos = overheight - limit;
-        $("#chatconversation").animate({ scrollTop: pos }, 200);
-    };
-    //chat
-    MeetingUI.prototype.receiveMessage = function (username, message, timestamp) {
-        message = this.emonameToEmoicon(message);
-        $("#chatconversation").append('<div class="chat-message-group remote"> \
-        <div class= "chatmessage-wrapper" >\
-                <div class="chatmessage ">\
-                    <div class="replywrapper">\
-                        <div class="messagecontent">\
-                            <div class="display-name">' + username + '</div>\
-                            <div class="usermessage">' + message + '</div>\
-                        </div>\
-                    </div>\
-                </div>\
-                <div class="timestamp">' + this.getCurTime() + '</div>\
-            </div >\
-        </div>');
-        this.scrollToBottom();
-        var el = $("#chat").find(".toolbox-icon");
-        el.addClass("toggled");
-        $("#video-panel").addClass("shift-right");
-        $("#new-toolbox").addClass("shift-right");
-        $("#sideToolbarContainer").removeClass("invisible");
-        this.refreshCardViews();
-    };
     MeetingUI.prototype.updateTime = function (timeLabel) {
         this.timestampElement.innerHTML = timeLabel;
         if (!this.initTopInfo) {
@@ -962,10 +646,34 @@ var MeetingUI = /** @class */ (function () {
             $(this.topInfobarElement).addClass("visible");
         }
     };
-    MeetingUI.prototype.showMeetingSubject = function (subject) {
-        if (subject && subject.length > 0) {
-            this.subjectElement.innerHTML = subject;
+    MeetingUI.prototype.showMeetingSubject = function (subject, hostName) {
+        if (subject && subject.trim().length > 0) {
+            var subjectLabel = subject.trim();
+            if (hostName && hostName.trim().length > 0)
+                subjectLabel += "(" + hostName.trim() + ")";
+            this.subjectElement.innerHTML = subjectLabel;
         }
+    };
+    MeetingUI.prototype.showSettingDialog = function () {
+        var settingDialog = new SettingDialog_1.SettingDialog();
+        var props = new SettingDialog_1.SettingDialogProps();
+        props.curDevices = this.meeting.getActiveDevices();
+        props.onDeviceChange = this.meeting.onDeviceChange.bind(this.meeting);
+        settingDialog.init(props);
+        settingDialog.show();
+    };
+    MeetingUI.prototype.onChatMessage = function (name, msg, timestamp) {
+        this.chattingPanel.receiveMessage(name, msg, timestamp);
+    };
+    //add, remove participant to and from list
+    MeetingUI.prototype.addParticipant = function (jitsiId, name, me, useCamera, useMic) {
+        this.participantsListPanel.addParticipant(jitsiId, name, me, useCamera, useMic);
+    };
+    MeetingUI.prototype.removeParticipant = function (jitsiId) {
+        this.participantsListPanel.removeParticipant(jitsiId);
+    };
+    MeetingUI.prototype.showParticipantListButton = function (show) {
+        $("#open-participants-toggle").css("visibility", show ? "visible" : "hidden");
     };
     return MeetingUI;
 }());

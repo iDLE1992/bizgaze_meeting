@@ -12,13 +12,12 @@ body {
     margin: 0;
     width: 100%;
     height: 100%;
-    font-size: 12px;
+    font-size: 12px!important;
     font-weight: 400;
     overflow: hidden;
     color: #f1f1f1;
     background: #474747;
     line-height: 1.4285714286;
-    font-family: Arial,sans-serif;
 }
 
 ::-webkit-scrollbar-track-piece {
@@ -70,6 +69,14 @@ svg {
 
 main{
     height: 100%;
+}
+
+video {
+    inset: 0;
+    object-fit: fill;
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
 }
 
 #header {
@@ -149,11 +156,11 @@ main{
     background:none;
 }
 
-button:active {
+/*button:active {
     outline: none;
     border-radius: 50%;
     background: gray;
-}
+}*/
 
 button:focus{
     outline: none;
@@ -227,11 +234,6 @@ button:focus{
     height: 20px;
 }
 
-video {
-    width:100%;
-    height:100%;
-
-}
 
 .height-100 {
     height: 100%;
@@ -269,15 +271,15 @@ video {
     background: black;
     display: inline-block;
     margin: 2px;
-    border-radius: 5px;
+    border-radius: 4px;
     position: relative;
     cursor: pointer;
-    box-shadow: 0 0 3px 3px #313740;
-    padding: 1px 0px;
+    box-shadow: 0 0 5px 3px #292a2a;
+    padding: 0px;
 }
 
 .active-speaker {
-    box-shadow: 0 0 5px 3px #165ecc;
+    /*box-shadow: 0 0 5px 3px #165ecc;*/
 }
 
 .new-toolbox {
@@ -540,6 +542,10 @@ video {
 .popup-menu .visible {
     visibility : visible;
 }
+
+    .popup-menu .label {
+        white-space: nowrap;
+    }
 
 .remotevideomenu {
     height:35px;
@@ -1017,11 +1023,210 @@ video {
     display: inline-block;
     font-size: 12px;
     line-height: 16px;
-    min-width: 34px;
     padding: 6px 8px;
 }
 
 
 .toolbox-button.muted svg {
     fill: red;
+}
+
+
+
+.modal-content {
+    background: rgb(40, 52, 71);
+}
+
+.modal-title {
+    font-size: 1.6em;
+}
+
+.modal-footer, .modal-header {
+    border: none;
+}
+
+.modal-dialog .close path {
+    fill: rgb(184, 199, 224);
+}
+
+.modal-dialog .container {
+    padding: 0px;
+}
+
+.modal-dialog .row {
+    padding: 0px;
+}
+
+.modal-dialog .modal-header {
+    padding-bottom: 0px;
+}
+
+.modal-dialog .modal-body {
+    overflow-x: hidden;
+}
+
+.setting-dialog {
+    color: lightgray;
+}
+
+.setting-dialog .modal-footer, .setting-dialog .modal-header {
+    display: none;
+}
+.setting-dialog .modal-body {
+    padding: 0px;
+}
+.setting-dialog #camera-preview {
+    inset: 0;
+    position: absolute;
+    object-fit: fill;
+}
+.setting-dialog .video-container {
+    background: #5c5c5c;
+}
+
+
+    .setting-dialog .device-list-container {
+        background: #353535;
+        padding: 60px 20px;
+        border: 1px solid #444343;
+    }
+
+@media (min-width: 768px) {
+    .setting-dialog .modal-dialog {
+        max-width: 768px;
+        min-width: 768px;
+    }
+}@media (max-width: 767px) {
+    .setting-dialog .modal-dialog {
+        max-width: 300px;
+        min-width: 300px;
+    }
+}
+
+
+.modal-backdrop.show {
+    opacity: 0.8;
+}
+
+    .setting-dialog .rounded-left {
+        border-top-left-radius: 0.65rem !important;
+        border-bottom-left-radius: 0.65rem !important;
+    }
+
+    .setting-dialog .rounded-right {
+        border-top-right-radius: 0.65rem !important;
+        border-bottom-right-radius: 0.65rem !important;
+    }
+
+    .setting-dialog .btn.btn-primary {
+        padding-top: calc(0.5rem + 1px) !important;
+        padding-bottom: calc(0.5rem + 1px) !important;
+        background: #00a9e8;
+    }
+
+        .setting-dialog .btn.btn-primary:hover {
+            background: #137da5;
+        }
+
+        .setting-dialog .btn.btn-primary:active, .setting-dialog .btn.btn-primary:focus {
+            background: #196582;
+        }
+
+    .setting-dialog h1, .setting-dialog label {
+        font-weight: 300;
+    }
+
+    .select2-search {
+        display: none;
+    }
+
+    .select2-container--bootstrap5 .select2-dropdown {
+        padding: 0px;
+    }
+
+    .select2-container--bootstrap5 .select2-selection__clear {
+        display: none;
+    }
+
+.chat-badge.badge.badge-circle {
+    position: absolute;
+    top: 5px;
+    left: 25px;
+    background-color: #6cf;
+    color: white;
+    width: 1.3rem;
+    height: 1.3rem;
+}
+
+#open-participants-toggle {
+    background-color: #131519;
+}
+
+#participants-list {
+    background: transparent;
+}
+
+    #participants-list .card {
+        background: #131519;
+    }
+
+    #participants-list .card-header, #participants-list .card-footer {
+        border: 0px;
+    }
+
+    #participants-list #kt_explore_close:hover {
+        background: none;
+    }
+
+
+.jitsi-participant {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    margin-bottom: 2em;
+}
+
+    .jitsi-participant .participant-avatar {
+        margin-right: 2.25rem;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .jitsi-participant .participant-content {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        flex-grow: 1;
+        border-bottom: 2px solid #444;
+    }
+
+    .jitsi-participant .spacer {
+        flex-grow: 1;
+    }
+
+    .jitsi-participant .jitsi-icon {
+        margin-right: 1.2em;
+    }
+
+    .jitsi-participant .name {
+        font-size: 1.3em;
+    }
+#participants-list-body {
+    padding-right: 1em;
+}
+
+.jitsi-participant .jitsi-icon svg:hover {
+    fill: #ff0000;
+}
+.jitsi-participant .jitsi-icon svg:active {
+    fill: #9f1616;
+}
+
+#participants-list-close {
+    background-color: transparent;
+}
+
+#participants-list-close rect {
+    fill: #A1A5B7;
 }

@@ -100,13 +100,21 @@ namespace BizGazeMeeting.Server
             liveRoomList.TryRemove(roomId, out _);
         }
 
-        public Client JoinClientToRoom(Int64 roomId, Int64 userId, string connectionId)
+        /**
+         * **************************************************************************
+         *              
+         *              Join GroupChattig | webinar
+         *           in webinar  [ userId = 0 ] means Anonymous user
+         *
+         * **************************************************************************
+         */
+        public Client JoinClientToRoom(Int64 roomId, Int64 userId, string anonymousUserName, string connectionId)
         {
             LiveMeeting room = getRoomById(roomId);
             if (room == null)
                 return null;
 
-            var client = room.JoinClient(userId, connectionId);
+            var client = room.JoinClient(userId, anonymousUserName, connectionId);
             if (client == null)
             {
                 return null;
@@ -118,7 +126,7 @@ namespace BizGazeMeeting.Server
             BizGazeCallback.onMeetingJoined(room, client);
 
             //log to database
-            _logService.JoinMeeting(room._meeting, client._participant);
+            _logService.JoinMeeting(room._meeting, client.participant);
             return client;
         }
 
@@ -137,7 +145,7 @@ namespace BizGazeMeeting.Server
             BizGazeCallback.onMeetingLeft(room, client);
 
             //log to database
-            _logService.LeftMeeting(room._meeting, client._participant);
+            _logService.LeftMeeting(room._meeting, client.participant);
 
             return true;
         }

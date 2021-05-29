@@ -1,5 +1,5 @@
 ﻿
-import { MediaType } from "./MediaType";
+import { MediaType } from "../enum/MediaType";
 
 export interface JitsiTrack {
     //"video" for the video tracks and "audio" for the audio tracks

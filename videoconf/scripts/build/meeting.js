@@ -35,16 +35,25 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from) {
+    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+    return to;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BizGazeMeeting = void 0;
 var signalR = require("@microsoft/signalr");
-var BGC_Msg_1 = require("./BGC_Msg");
+var bg_1 = require("./protocol/bg");
 var meeting_ui_1 = require("./meeting_ui");
-var MediaType_1 = require("./jitsi/MediaType");
+var BGMeeting_1 = require("./model/BGMeeting");
+var MediaType_1 = require("./enum/MediaType");
 var CommandParam_1 = require("./jitsi/CommandParam");
-var UserProperty_1 = require("./jitsi/UserProperty");
-var Room_1 = require("./Room");
-var TimeUtil_1 = require("./TimeUtil");
+var UserProperty_1 = require("./enum/UserProperty");
+var TimeUtil_1 = require("./util/TimeUtil");
+var ActiveDevices_1 = require("./model/ActiveDevices");
+var InputDevicePolicy_1 = require("./model/InputDevicePolicy");
+var ChannelType_1 = require("./enum/ChannelType");
+var jitsi_1 = require("./protocol/jitsi");
 /***********************************************************************************
 
                        Lifecycle of Bizgaze Meeting
@@ -53,47 +62,49 @@ var TimeUtil_1 = require("./TimeUtil");
     ... -> leaveFromJitsi -> leaveFromBG
 
 ************************************************************************************/
-var ControlMessageTypes;
-(function (ControlMessageTypes) {
-    ControlMessageTypes["GRANT_HOST_ROLE"] = "grant-host";
-    ControlMessageTypes["MUTE_AUDIO"] = "mute_audio";
-    ControlMessageTypes["MUTE_VIDEO"] = "mute_video";
-})(ControlMessageTypes || (ControlMessageTypes = {}));
-;
+var MeetingConfig = /** @class */ (function () {
+    function MeetingConfig() {
+        this.resetMuteOnDeviceChange = true;
+        this.hideToolbarOnMouseOut = false;
+    }
+    return MeetingConfig;
+}());
 var BizGazeMeeting = /** @class */ (function () {
     function BizGazeMeeting() {
         this.connection = new signalR.HubConnectionBuilder().withUrl("/BizGazeMeetingServer").build();
-        this.connMap = new Map();
         this.joinedBGConference = false;
-        this.joinedJitsiConference = false;
         this.m_UI = new meeting_ui_1.MeetingUI(this);
-        this.roomInfo = new Room_1.BGRoom();
+        this.roomInfo = new BGMeeting_1.BGMeetingInfo();
         this.m_BGUserList = new Map();
         this.localVideoElem = null;
+        this.localAudioElem = null;
         this.myInfo = {
             Id: "",
             Jitsi_Id: "",
             Name: "",
             IsHost: false,
-            hasMediaDevice: {
-                hasCamera: false,
-                hasMic: false
+            IsAnonymous: false,
+            useMedia: {
+                useCamera: true,
+                useMic: true
             },
             mediaMute: {
                 audioMute: false,
                 videoMute: false
-            }
+            },
         };
-        this.bizgazePeerLinkOffer = 'bizgazePeerLinkOffer';
-        this.bizgazePeerLinkAnswer = 'bizgazePeerLinkAnswer';
-        this.pcConfig = { "iceServers": [] };
-        this.offerConstraints = { "optional": [], "mandatory": {} };
-        this.mediaConstraints = { "audio": true, "video": { "mandatory": {}, "optional": [] } };
-        this.sdpConstraints = { 'mandatory': { 'OfferToReceiveAudio': true, 'OfferToReceiveVideo': true } };
         this.JitsiMeetJS = window.JitsiMeetJS;
+        this.JitsiServerDomain = "idlests.com";
+        //JitsiServerDomain = "unimail.in";
+        this.localTracks = [];
         this.screenSharing = false;
         this.recording = false;
         this.downloadRecordFile = false;
+        //default devices
+        this.activeCameraId = window._camId;
+        this.activeMicId = window._micId;
+        this.activeSpeakerId = window._speakerId;
+        this.config = new MeetingConfig();
         this.recordingData = [];
     }
     /**
@@ -103,373 +114,54 @@ var BizGazeMeeting = /** @class */ (function () {
      * **************************************************************************
      */
     BizGazeMeeting.prototype.start = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var initOptions;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(window._roomId && window._roomId > 0)) {
-                            this.leaveBGConference();
-                            return [2 /*return*/];
-                        }
-                        initOptions = {
-                            disableAudioLevels: true
-                        };
-                        this.JitsiMeetJS.setLogLevel(this.JitsiMeetJS.logLevels.ERROR);
-                        this.JitsiMeetJS.init(initOptions);
-                        //capture media devices
-                        return [4 /*yield*/, this.initMediaDevices()];
-                    case 1:
-                        //capture media devices
-                        _a.sent();
-                        this.Log("Camera: " + this.myInfo.hasMediaDevice.hasCamera);
-                        this.Log("Mic: " + this.myInfo.hasMediaDevice.hasMic);
-                        //update device status
-                        this.m_UI.updateToolbar(this.myInfo, this.localTracks);
-                        //connect to bg server
-                        this.connectToBGServer(function () {
-                            _this.Log("Connected to BizGaze SignalR Server");
-                            _this.joinBGConference();
-                        });
-                        return [2 /*return*/];
+        var _this = this;
+        if (!window._roomId) {
+            this.leaveBGConference();
+            return;
+        }
+        //jitsi init
+        var initOptions = {
+            disableAudioLevels: true
+        };
+        this.JitsiMeetJS.setLogLevel(this.JitsiMeetJS.logLevels.ERROR);
+        this.JitsiMeetJS.init(initOptions);
+        //device log
+        this.JitsiMeetJS.mediaDevices.enumerateDevices(function (devices) {
+            devices.forEach(function (d) {
+                if (_this.activeCameraId.length > 0 && d.deviceId === _this.activeCameraId) {
+                    _this.Log("Camera: " + d.label);
+                }
+                if (_this.activeMicId.length > 0 && d.deviceId === _this.activeMicId && d.kind === 'audioinput') {
+                    _this.Log("Microphone: " + d.label);
                 }
             });
+        });
+        //connect to bg server
+        this.connectToBGServer(function () {
+            _this.Log("Connected to BizGaze SignalR Server");
+            _this.joinBGConference(); // => onBGConferenceJoined
         });
     };
     BizGazeMeeting.prototype.stop = function () {
-        if (this.joinedJitsiConference)
-            this.leaveJitsiConference();
-        else
+        //todo 
+        //if it was recording, save it before stop
+        var _this = this;
+        if (this.jitsiRoomJoined()) {
+            this.stopAllMediaStreams();
+            this.jitsiRoom.leave().then(function () {
+                debugger;
+                _this.leaveBGConference();
+            }).catch(function (error) {
+                debugger;
+                _this.leaveBGConference();
+            });
+        }
+        else {
             this.leaveBGConference();
+        }
     };
     BizGazeMeeting.prototype.forceStop = function () {
-        this.leaveJitsiConference();
-        this.leaveBGConference();
-    };
-    /**
-     * **************************************************************************
-     *              Local Camera/Microphone init
-     *
-     * **************************************************************************
-     */
-    BizGazeMeeting.prototype.initMediaDevices = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var audioTracks, videoTracks, tracks;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this.Log('Getting user media devices ...');
-                        return [4 /*yield*/, this.JitsiMeetJS.mediaDevices.enumerateDevices(function (devices) {
-                                var audioInputDeviceExist = false;
-                                var videoInputDeviceExist = false;
-                                var videoInputDevices = devices.filter(function (d) {
-                                    return d.kind === 'videoinput';
-                                });
-                                if (videoInputDevices.length >= 1) {
-                                    _this.Log("found one camera");
-                                    videoInputDeviceExist = true;
-                                    videoInputDevices.map(function (d) {
-                                        return _this.Log(d.deviceId + "  ---> " + d.label);
-                                    });
-                                }
-                                var audioInputDevices = devices.filter(function (d) { return d.kind === 'audioinput'; });
-                                if (audioInputDevices.length >= 1) {
-                                    audioInputDeviceExist = true;
-                                    audioInputDevices.map(function (d) {
-                                        return _this.Log(d.deviceId + "  ---> " + d.label);
-                                    });
-                                }
-                                /*let createTrackOptions = [];
-                                if (audioInputDeviceExist) createTrackOptions.push(MediaType.AUDIO);
-                                if (videoInputDeviceExist) createTrackOptions.push(MediaType.VIDEO);*/
-                            })];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.JitsiMeetJS.createLocalTracks({ devices: [MediaType_1.MediaType.AUDIO] }).catch(function (err) {
-                            })];
-                    case 2:
-                        audioTracks = _a.sent();
-                        return [4 /*yield*/, this.JitsiMeetJS.createLocalTracks({ devices: [MediaType_1.MediaType.VIDEO] }).catch(function (err) {
-                            })];
-                    case 3:
-                        videoTracks = _a.sent();
-                        tracks = [];
-                        if (audioTracks && audioTracks.length > 0)
-                            tracks.push(audioTracks[0]);
-                        if (videoTracks && videoTracks.length > 0)
-                            tracks.push(videoTracks[0]);
-                        this.onLocalTracks(tracks);
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    BizGazeMeeting.prototype.onLocalTracks = function (tracks) {
-        this.localTracks = tracks;
-        for (var i = 0; i < this.localTracks.length; i++) {
-            this.localTracks[i].addEventListener(this.JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED, function (audioLevel) { return console.log("Audio Level local: " + audioLevel); });
-            this.localTracks[i].addEventListener(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED, function () { console.log('local track muted'); });
-            this.localTracks[i].addEventListener(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, function () { return console.log('local track stoped'); });
-            this.localTracks[i].addEventListener(this.JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED, function (deviceId) {
-                return console.log("track audio output device was changed to " + deviceId);
-            });
-            if (this.localTracks[i].getType() === MediaType_1.MediaType.VIDEO) {
-                this.myInfo.hasMediaDevice.hasCamera = true;
-            }
-            else if (this.localTracks[i].getType() === MediaType_1.MediaType.AUDIO) {
-                this.myInfo.hasMediaDevice.hasMic = true;
-            }
-        }
-        if (this.localVideoElem == null) {
-            this.localVideoElem = this.m_UI.getEmptyVideoPanel();
-        }
-        this._updateMyPanel();
-        for (var i = 0; i < this.localTracks.length; i++) {
-            if (this.localTracks[i].getType() === MediaType_1.MediaType.VIDEO) {
-                this.localTracks[i].attach(this.localVideoElem);
-                this.m_UI.setShotnameVisible(false, this.localVideoElem);
-            }
-        }
-    };
-    BizGazeMeeting.prototype.stopAllMediaStreams = function () {
-        if (this.localTracks && this.localTracks.length > 0) {
-            var N = this.localTracks.length;
-            for (var i = 0; i < N; i++) {
-                this.localTracks[i].dispose();
-            }
-        }
-    };
-    /**
-     * **************************************************************************
-     *              Jitsi Server interaction
-     *         Connect
-     *         Enter/Leave Room
-     *         Send/Receive Track
-     *         UserInfo
-     * **************************************************************************
-     */
-    BizGazeMeeting.prototype.connectToJitsiServer = function () {
-        var _this = this;
-        var serverdomain = "idlests.com";
-        //const serverdomain = "unimail.in";
-        var connConf = {
-            hosts: {
-                domain: serverdomain,
-                muc: "conference." + serverdomain,
-            },
-            bosh: "//" + serverdomain + "/http-bind",
-            // The name of client node advertised in XEP-0115 'c' stanza
-            clientNode: "//" + serverdomain + "/jitsimeet"
-        };
-        this.jitsiConnection = new this.JitsiMeetJS.JitsiConnection(null, null, connConf);
-        this.jitsiConnection.addEventListener(this.JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED, function () { _this.onJitsiConnectionSuccess(); });
-        this.jitsiConnection.addEventListener(this.JitsiMeetJS.events.connection.CONNECTION_FAILED, function () { _this.onJitsiConnectionFailed(); });
-        this.jitsiConnection.addEventListener(this.JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED, function () { _this.disconnectFromJitsiServer(); });
-        this.jitsiConnection.connect();
-    };
-    BizGazeMeeting.prototype.onJitsiConnectionSuccess = function () {
-        this.Log("Connected to Jitsi Server");
-        this.joinJitsiConference();
-    };
-    BizGazeMeeting.prototype.onJitsiConnectionFailed = function () {
-        this.Log("sorry, failed to connect jitsi server");
-    };
-    BizGazeMeeting.prototype.disconnectFromJitsiServer = function () {
-        this.Log("disconnected from jitsi server");
-    };
-    BizGazeMeeting.prototype.joinJitsiConference = function () {
-        var _this = this;
-        var confOptions = {
-            openBridgeChannel: true
-        };
-        this.jitsiRoom = this.jitsiConnection.initJitsiConference("" + this.roomInfo.Id, confOptions);
-        //remote track
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_ADDED, function (track) {
-            _this.onAddedRemoteTrack(track);
-        });
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_REMOVED, function (track) {
-            _this.onRemovedRemoteTrack(track);
-        });
-        //my join
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.CONFERENCE_JOINED, function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, this.onJitsiConferenceJoined()];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        }); }); });
-        //my left
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.CONFERENCE_LEFT, function () { _this.onJitsiConferenceLeft(); });
-        //remote join
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.USER_JOINED, function (id, user) {
-            _this.onJitsiUserJoined(id, user);
-            //remoteTracks[id] = [];
-        });
-        //remote left
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.USER_LEFT, function (id, user) {
-            _this.onJitsiUserLeft(id, user);
-        });
-        //track mute
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_MUTE_CHANGED, function (track) {
-            _this.onTrackMuteChanged(track);
-        });
-        //audio level change
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_AUDIO_LEVEL_CHANGED, function (userID, audioLevel) {
-            _this.Log(userID + " - " + audioLevel);
-        });
-        //chat
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.MESSAGE_RECEIVED, function (id, message, timestamp) {
-            _this.onReceiveChatMessage(id, message, timestamp);
-        });
-        //name change
-        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.DISPLAY_NAME_CHANGED, function (userID, displayName) {
-            console.log(userID + " - " + displayName);
-        });
-        //command
-        this.jitsiRoom.addCommandListener(ControlMessageTypes.GRANT_HOST_ROLE, function (param) { _this.onChangedModerator(param); });
-        this.jitsiRoom.addCommandListener(ControlMessageTypes.MUTE_AUDIO, function (param) { _this.onMutedAudio(param); });
-        this.jitsiRoom.addCommandListener(ControlMessageTypes.MUTE_VIDEO, function (param) { _this.onMutedVideo(param); });
-        //set name
-        this.jitsiRoom.setDisplayName(this.myInfo.Name);
-        //joinJitsiConference
-        this.jitsiRoom.join(); //callback -  onJitsiUserJoined
-    };
-    BizGazeMeeting.prototype.leaveJitsiConference = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var i;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        i = 0;
-                        _a.label = 1;
-                    case 1:
-                        if (!(i < this.localTracks.length)) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.jitsiRoom.removeTrack(this.localTracks[i])];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 4: return [4 /*yield*/, this.jitsiRoom.leave().then(function () {
-                            _this.leaveBGConference();
-                        })];
-                    case 5:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    //my enter room
-    BizGazeMeeting.prototype.onJitsiConferenceJoined = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                this.joinedJitsiConference = true;
-                setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
-                    var i;
-                    var _this = this;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                i = 0;
-                                _a.label = 1;
-                            case 1:
-                                if (!(i < this.localTracks.length)) return [3 /*break*/, 4];
-                                this.Log("[ OUT ] my track - " + this.localTracks[i].getType());
-                                return [4 /*yield*/, this.jitsiRoom.addTrack(this.localTracks[i]).catch(function (error) {
-                                        _this.Log(error);
-                                    })];
-                            case 2:
-                                _a.sent();
-                                _a.label = 3;
-                            case 3:
-                                i++;
-                                return [3 /*break*/, 1];
-                            case 4: return [2 /*return*/];
-                        }
-                    });
-                }); }, 500);
-                //set subject
-                this.m_UI.showMeetingSubject(this.roomInfo.subject);
-                //set time
-                setInterval(function () {
-                    var delta = Date.now() - _this.localStartTimestamp;
-                    var elapsed = _this.roomInfo.elapsed + delta;
-                    _this.m_UI.updateTime(TimeUtil_1.TsToDateFormat(elapsed));
-                }, 1000);
-                return [2 /*return*/];
-            });
-        });
-    };
-    //my leave room
-    BizGazeMeeting.prototype.onJitsiConferenceLeft = function () {
-        this.joinedJitsiConference = false;
-        this.leaveBGConference();
-    };
-    //remote enter room
-    BizGazeMeeting.prototype.onJitsiUserJoined = function (id, user) {
-        var _this = this;
-        this.Log("joined user: " + user.getDisplayName());
-        setTimeout(function () {
-            if (!user.getProperty(UserProperty_1.UserProperty.videoElem)) {
-                var videoElem = _this.m_UI.getEmptyVideoPanel();
-                user.setProperty(UserProperty_1.UserProperty.videoElem, videoElem);
-                _this._updateUserPanel(user);
-            }
-        }, 3000);
-        //notify him that i am moderator
-        if (this.myInfo.IsHost)
-            this.grantModeratorRole(this.jitsiRoom.myUserId());
-    };
-    //remote leave room
-    BizGazeMeeting.prototype.onJitsiUserLeft = function (id, user) {
-        this.Log("left user: " + user.getDisplayName());
-        this.m_UI.freeVideoPanel(user.getProperty(UserProperty_1.UserProperty.videoElem));
-    };
-    //[ IN ] remote track
-    BizGazeMeeting.prototype.onAddedRemoteTrack = function (track) {
-        if (track.isLocal()) {
-            return;
-        }
-        this.Log("[ IN ] remote track - " + track.getType());
-        var id = track.getParticipantId();
-        var user = this.jitsiRoom.getParticipantById(id);
-        if (user) {
-            var videoElem = user.getProperty(UserProperty_1.UserProperty.videoElem);
-            if (!videoElem) {
-                videoElem = this.m_UI.getEmptyVideoPanel();
-                user.setProperty(UserProperty_1.UserProperty.videoElem, videoElem);
-                this._updateUserPanel(user);
-            }
-            track.attach(videoElem);
-            this._updateUserPanel(user);
-        }
-    };
-    BizGazeMeeting.prototype._updateUserPanel = function (user) {
-        if (user && user.getProperty(UserProperty_1.UserProperty.videoElem)) {
-            var videoElem = user.getProperty(UserProperty_1.UserProperty.videoElem);
-            this.m_UI.updatePanelOnJitsiUser(videoElem, this.myInfo, user);
-        }
-    };
-    BizGazeMeeting.prototype._updateMyPanel = function () {
-        if (this.localVideoElem)
-            this.m_UI.updatePanelOnMyBGUser(this.localVideoElem, this.myInfo, this.localTracks);
-    };
-    // [DEL] remote track
-    BizGazeMeeting.prototype.onRemovedRemoteTrack = function (track) {
-        this.Log("[ DEL ] remotetrack - " + track.getType());
-        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_VIDEOTYPE_CHANGED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED);
-        track.removeAllListeners(this.JitsiMeetJS.events.track.NO_DATA_FROM_SOURCE);
+        this.stop();
     };
     /**
      * **************************************************************************
@@ -491,8 +183,29 @@ var BizGazeMeeting = /** @class */ (function () {
         });
     };
     BizGazeMeeting.prototype.joinBGConference = function () {
-        this.connection.invoke("Join", window._roomId + "", window._userId + "").catch(function (err) {
+        this.connection.invoke("Join", "" + window._roomId, "" + window._userId, "" + window._anonymousUserName).catch(function (err) {
             return console.error("Join Meeting Failed.", err.toString());
+        });
+    };
+    //this is the entry point where we can decide webinar/group chatting
+    //                        where we can decide i am host or not
+    BizGazeMeeting.prototype.onBGConferenceJoined = function (roomInfo, userInfo) {
+        var _this = this;
+        this.joinedBGConference = true;
+        this.localStartTimestamp = Date.now();
+        this.roomInfo = roomInfo;
+        this.Log("Meeting Type: " + (roomInfo.IsWebinar ? "Webinar" : "Group Chatting"));
+        this.myInfo.Id = userInfo.Id;
+        this.myInfo.Name = userInfo.Name;
+        this.myInfo.IsHost = userInfo.IsHost;
+        var deviceUsePolicy = this.getInitialUserDevicePolicy();
+        this.myInfo.useMedia.useCamera = deviceUsePolicy.useCamera;
+        this.myInfo.useMedia.useMic = deviceUsePolicy.useMic;
+        this.m_UI.showParticipantListButton(this.myInfo.IsHost);
+        this.initMediaDevices()
+            .then(function (_) {
+            //connect to jitsi server and enter room
+            _this.connectToJitsiServer();
         });
     };
     BizGazeMeeting.prototype.leaveBGConference = function () {
@@ -506,22 +219,10 @@ var BizGazeMeeting = /** @class */ (function () {
             $("form#return").submit();
         }
     };
-    BizGazeMeeting.prototype.onBGConferenceJoined = function (roomId, userInfo) {
-        this.joinedBGConference = true;
-        this.roomInfo.Id = "" + roomId;
-        this.myInfo.Id = userInfo.Id;
-        this.myInfo.Name = userInfo.Name;
-        this.myInfo.IsHost = userInfo.IsHost;
-        //update name, moderator ...
-        this._updateMyPanel();
-        //connect to jitsi server and enter room
-        this.connectToJitsiServer();
-    };
     BizGazeMeeting.prototype.onBGConferenceLeft = function () {
         this.joinedBGConference = false;
         this.stopAllMediaStreams();
         this.m_BGUserList.clear();
-        this.connMap.clear();
         $("form#return").submit();
     };
     BizGazeMeeting.prototype.onBGUserJoined = function (userInfo) {
@@ -531,11 +232,7 @@ var BizGazeMeeting = /** @class */ (function () {
         if (this.m_BGUserList.has(userId))
             this.Log(this.m_BGUserList.get(userId).Name + " has left");
         if (this.m_BGUserList.has(userId)) {
-            var conn = this.connMap.get(userId);
-            if (conn != null)
-                conn.closePeerConnection();
             this.m_BGUserList.delete(userId);
-            this.connMap.delete(userId);
         }
         //self leave
         if (userId == this.myInfo.Id) {
@@ -544,22 +241,23 @@ var BizGazeMeeting = /** @class */ (function () {
     };
     BizGazeMeeting.prototype.registerBGServerCallbacks = function () {
         var _this = this;
-        this.connection.on(BGC_Msg_1.BGC_Msg.ROOM_JOINED, function (roomId, strMyInfo) {
-            var info = JSON.parse(strMyInfo);
-            _this.onBGConferenceJoined(roomId, info);
+        this.connection.on(bg_1.BGtoUser.ROOM_JOINED, function (strRoomInfo, strMyInfo) {
+            var roomInfo = JSON.parse(strRoomInfo);
+            var myInfo = JSON.parse(strMyInfo);
+            _this.onBGConferenceJoined(roomInfo, myInfo);
         });
-        this.connection.on(BGC_Msg_1.BGC_Msg.ROOM_USER_JOINED, function (strUserInfo) {
+        this.connection.on(bg_1.BGtoUser.ROOM_USER_JOINED, function (strUserInfo) {
             var info = JSON.parse(strUserInfo);
             _this.onBGUserJoined(info);
         });
-        this.connection.on(BGC_Msg_1.BGC_Msg.ERROR, function (message) {
+        this.connection.on(bg_1.BGtoUser.ERROR, function (message) {
             alert(message);
             _this.forceStop();
         });
-        this.connection.on(BGC_Msg_1.BGC_Msg.ROOM_LEFT, function (clientId) {
+        this.connection.on(bg_1.BGtoUser.ROOM_LEFT, function (clientId) {
             _this.onBGUserLeft(clientId);
         });
-        this.connection.on(BGC_Msg_1.BGC_Msg.SIGNALING, function (sourceId, strMsg) {
+        this.connection.on(bg_1.BGtoUser.SIGNALING, function (sourceId, strMsg) {
             /*console.log(' received signaling message:', strMsg);
             let msg = JSON.parse(strMsg);
             if (sourceId != this.myInfo.Id && this.connMap.has(sourceId)) {
@@ -567,18 +265,505 @@ var BizGazeMeeting = /** @class */ (function () {
                 peerConn.onSignalingMessage(msg);
             }*/
         });
-        this.connection.on(BGC_Msg_1.BGC_Msg.ROOM_INFO, function (strInfo) {
-            var info = JSON.parse(strInfo);
-            _this.roomInfo.subject = info.subject;
-            _this.roomInfo.elapsed = info.elapsed;
-            //update local ts
-            _this.localStartTimestamp = Date.now();
-        });
     };
     BizGazeMeeting.prototype.sendBGSignalingMessage = function (destId, msg) {
-        this.connection.invoke(BGC_Msg_1.BGC_Msg.SIGNALING, this.myInfo.Id, destId, JSON.stringify(msg)).catch(function (err) {
+        this.connection.invoke(bg_1.BGtoUser.SIGNALING, this.myInfo.Id, destId, JSON.stringify(msg)).catch(function (err) {
             return console.error(err.toString());
         });
+    };
+    /**
+     * **************************************************************************
+     *              Local Camera/Microphone init
+     *
+     * **************************************************************************
+     */
+    BizGazeMeeting.prototype.initMediaDevices = function () {
+        var _this = this;
+        this.Log('Getting user media devices ...');
+        //set speaker
+        if (this.activeSpeakerId && this.JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
+            this.JitsiMeetJS.mediaDevices.setAudioOutputDevice(this.activeSpeakerId);
+        }
+        ;
+        //set input devices
+        var cameraId = this.myInfo.useMedia.useCamera ? this.activeCameraId : null;
+        var micId = this.myInfo.useMedia.useMic ? this.activeMicId : null;
+        //const cameraId = this.activeCameraId;
+        //const micId = this.activeMicId;
+        return this.createLocalTracks(cameraId, micId)
+            .then(function (tracks) {
+            if (tracks.length <= 0) {
+                throw new Error("no tracks");
+            }
+            _this.onLocalTrackAdded(tracks);
+            return Promise.resolve();
+        }).catch(function (error) {
+            _this.m_UI.updateToolbar(_this.myInfo, _this.getLocalTracks());
+            if (!_this.roomInfo.IsWebinar || _this.myInfo.IsHost)
+                _this._updateMyPanel();
+            return Promise.resolve();
+        });
+    };
+    BizGazeMeeting.prototype.createVideoTrack = function (cameraDeviceId) {
+        var _this = this;
+        return this.JitsiMeetJS.createLocalTracks({
+            devices: ['video'],
+            cameraDeviceId: cameraDeviceId,
+            micDeviceId: null
+        })
+            .catch(function (error) {
+            _this.Log(error);
+            return Promise.resolve([]);
+        });
+    };
+    BizGazeMeeting.prototype.createAudioTrack = function (micDeviceId) {
+        var _this = this;
+        return (this.JitsiMeetJS.createLocalTracks({
+            devices: ['audio'],
+            cameraDeviceId: null,
+            micDeviceId: micDeviceId
+        })
+            .catch(function (error) {
+            _this.Log(error);
+            return Promise.resolve([]);
+        }));
+    };
+    BizGazeMeeting.prototype.createLocalTracks = function (cameraDeviceId, micDeviceId) {
+        var _this = this;
+        if (cameraDeviceId != null && micDeviceId != null) {
+            return this.JitsiMeetJS.createLocalTracks({
+                devices: ['audio', 'video'],
+                cameraDeviceId: cameraDeviceId,
+                micDeviceId: micDeviceId
+            }).catch(function () { return Promise.all([
+                _this.createAudioTrack(micDeviceId).then(function (_a) {
+                    var stream = _a[0];
+                    return stream;
+                }),
+                _this.createVideoTrack(cameraDeviceId).then(function (_a) {
+                    var stream = _a[0];
+                    return stream;
+                })
+            ]); }).then(function (tracks) {
+                return tracks.filter(function (t) { return typeof t !== 'undefined'; });
+            });
+        }
+        else if (cameraDeviceId != null) {
+            return this.createVideoTrack(cameraDeviceId);
+        }
+        else if (micDeviceId != null) {
+            return this.createAudioTrack(micDeviceId);
+        }
+        return Promise.resolve([]);
+    };
+    BizGazeMeeting.prototype.onLocalTrackAdded = function (tracks) {
+        return __awaiter(this, void 0, void 0, function () {
+            var i, localVideoTrack;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (tracks.length <= 0)
+                            return [2 /*return*/];
+                        i = 0;
+                        _a.label = 1;
+                    case 1:
+                        if (!(i < tracks.length)) return [3 /*break*/, 4];
+                        tracks[i].addEventListener(this.JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED, function (audioLevel) { return console.log("Audio Level local: " + audioLevel); });
+                        tracks[i].addEventListener(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED, function (track) { _this.updateUiOnLocalTrackChange(); });
+                        tracks[i].addEventListener(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, function (track) { _this.updateUiOnLocalTrackChange(); });
+                        tracks[i].addEventListener(this.JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED, function (deviceId) {
+                            return console.log("track audio output device was changed to " + deviceId);
+                        });
+                        if (this.jitsiRoomJoined())
+                            this.Log("[ OUT ] my track - " + tracks[i].getType());
+                        return [4 /*yield*/, this.replaceLocalTrack(tracks[i], tracks[i].getType())];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3:
+                        i++;
+                        return [3 /*break*/, 1];
+                    case 4:
+                        //toolbar
+                        this.m_UI.updateToolbar(this.myInfo, this.getLocalTracks());
+                        //my video panel
+                        this._updateMyPanel();
+                        localVideoTrack = this.getLocalTrackByType(MediaType_1.MediaType.VIDEO);
+                        if (localVideoTrack) {
+                            localVideoTrack.attach(this.localVideoElem);
+                            this.localVideoElem.play();
+                            this.m_UI.setShotnameVisible(false, this.localVideoElem);
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    BizGazeMeeting.prototype.stopAllMediaStreams = function () {
+        var _this = this;
+        var localTracks = __spreadArray([], this.getLocalTracks());
+        localTracks.forEach(function (track) {
+            _this.removeLocalTrack(track).then(function (_) {
+                track.dispose();
+            });
+        });
+    };
+    BizGazeMeeting.prototype.onDeviceChange = function (newDevices) {
+        var _this = this;
+        var videoDeviceChanged = this.activeCameraId !== newDevices.cameraId;
+        var audioDeviceChanged = this.activeMicId !== newDevices.micId;
+        //create new tracks with new devices
+        this.createLocalTracks(videoDeviceChanged ? newDevices.cameraId : null, audioDeviceChanged ? newDevices.micId : null)
+            .then(function (tracks) {
+            _this.onLocalTrackAdded(tracks);
+        });
+        this.activeCameraId = newDevices.cameraId;
+        this.activeMicId = newDevices.micId;
+        this.activeSpeakerId = newDevices.speakerId;
+    };
+    BizGazeMeeting.prototype.getActiveDevices = function () {
+        var activeDevices = new ActiveDevices_1.ActiveDevices();
+        activeDevices.cameraId = this.activeCameraId;
+        activeDevices.micId = this.activeMicId;
+        activeDevices.speakerId = this.activeSpeakerId;
+        return activeDevices;
+    };
+    BizGazeMeeting.prototype.getInitialUserDevicePolicy = function () {
+        var useCamera = true;
+        var useMic = true;
+        if (this.roomInfo.IsWebinar) {
+            if (!this.myInfo.IsHost) {
+                useCamera = false;
+                useMic = false;
+            }
+        }
+        if (this.roomInfo.channelType === ChannelType_1.ChannelType.AudioOnly)
+            useCamera = false;
+        if (this.roomInfo.channelType === ChannelType_1.ChannelType.VideoOnly)
+            useMic = false;
+        if (window._videoMute !== "true")
+            useCamera = false;
+        if (window._audioMute !== "true")
+            useMic = false;
+        var policy = new InputDevicePolicy_1.InputDeviceUsePolicy();
+        policy.useCamera = useCamera;
+        policy.useMic = useMic;
+        return policy;
+    };
+    /**
+     * **************************************************************************
+     *              Local Track Access
+     *
+     * **************************************************************************
+     */
+    BizGazeMeeting.prototype.jitsiRoomJoined = function () {
+        return this.jitsiRoom && this.jitsiRoom.isJoined();
+    };
+    BizGazeMeeting.prototype.getLocalTracks = function () {
+        if (this.jitsiRoomJoined())
+            return this.jitsiRoom.getLocalTracks();
+        else
+            return this.localTracks;
+    };
+    BizGazeMeeting.prototype.getLocalTrackByType = function (type) {
+        if (this.jitsiRoomJoined()) {
+            var tracks = this.jitsiRoom.getLocalTracks(type);
+            if (tracks.length > 0)
+                return tracks[0];
+            return null;
+        }
+        else {
+            var track = this.localTracks.find(function (t) { return t.getType() === type; });
+            return track;
+        }
+    };
+    BizGazeMeeting.prototype.removeLocalTrack = function (track) {
+        if (this.jitsiRoomJoined()) {
+            return this.jitsiRoom.removeTrack(track);
+        }
+        else {
+            var index = this.localTracks.indexOf(track);
+            if (index >= 0)
+                this.localTracks.splice(index, 1);
+            return Promise.resolve();
+        }
+    };
+    //type is neccessray when newTrack is null
+    BizGazeMeeting.prototype.replaceLocalTrack = function (newTrack, type) {
+        return __awaiter(this, void 0, void 0, function () {
+            var oldTrack;
+            var _this = this;
+            return __generator(this, function (_a) {
+                oldTrack = this.getLocalTrackByType(type);
+                if (oldTrack === newTrack)
+                    return [2 /*return*/, Promise.reject()];
+                if (!oldTrack && !newTrack)
+                    return [2 /*return*/, Promise.reject()];
+                if (this.jitsiRoomJoined()) {
+                    return [2 /*return*/, this.jitsiRoom.replaceTrack(oldTrack, newTrack).then(function (_) {
+                            if (oldTrack)
+                                oldTrack.dispose();
+                            _this.updateUiOnLocalTrackChange();
+                            return Promise.resolve();
+                        })];
+                }
+                else {
+                    return [2 /*return*/, this.removeLocalTrack(oldTrack).then(function (_) {
+                            if (oldTrack)
+                                oldTrack.dispose();
+                            if (newTrack)
+                                _this.localTracks.push(newTrack);
+                            _this.updateUiOnLocalTrackChange();
+                            return Promise.resolve();
+                        })];
+                }
+                return [2 /*return*/];
+            });
+        });
+    };
+    BizGazeMeeting.prototype.updateUiOnLocalTrackChange = function () {
+        if (this.localVideoElem || this.localAudioElem)
+            this._updateMyPanel();
+        this.m_UI.updateToolbar(this.myInfo, this.getLocalTracks());
+    };
+    /**
+     * **************************************************************************
+     *              Jitsi Server interaction
+     *         Connect
+     *         Enter/Leave Room
+     *         Send/Receive Track
+     *         UserInfo
+     * **************************************************************************
+     */
+    BizGazeMeeting.prototype.connectToJitsiServer = function () {
+        var _this = this;
+        var serverdomain = this.JitsiServerDomain;
+        var connConf = {
+            hosts: {
+                domain: serverdomain,
+                muc: "conference." + serverdomain,
+            },
+            bosh: "//" + serverdomain + "/http-bind",
+            // The name of client node advertised in XEP-0115 'c' stanza
+            clientNode: "//" + serverdomain + "/jitsimeet"
+        };
+        this.jitsiConnection = new this.JitsiMeetJS.JitsiConnection(null, null, connConf);
+        this.jitsiConnection.addEventListener(this.JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED, function () { _this.onJitsiConnectionSuccess(); });
+        this.jitsiConnection.addEventListener(this.JitsiMeetJS.events.connection.CONNECTION_FAILED, function () { _this.onJitsiConnectionFailed(); });
+        this.jitsiConnection.addEventListener(this.JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED, function () { _this.disconnectFromJitsiServer(); });
+        this.jitsiConnection.connect();
+    };
+    BizGazeMeeting.prototype.onJitsiConnectionSuccess = function () {
+        this.Log("Connected to Jitsi Server - " + this.JitsiServerDomain);
+        this.joinJitsiConference();
+    };
+    BizGazeMeeting.prototype.onJitsiConnectionFailed = function () {
+        this.Log("Failed to connect Jitsi Server - " + this.JitsiServerDomain);
+    };
+    BizGazeMeeting.prototype.disconnectFromJitsiServer = function () {
+        this.Log("Disconnected from Jitsi Server - " + this.JitsiServerDomain);
+    };
+    BizGazeMeeting.prototype.joinJitsiConference = function () {
+        var _this = this;
+        var confOptions = {
+            openBridgeChannel: true
+        };
+        this.jitsiRoom = this.jitsiConnection.initJitsiConference("" + this.roomInfo.Id, confOptions);
+        //remote track
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_ADDED, function (track) {
+            _this.onRemoteTrackAdded(track);
+        });
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_REMOVED, function (track) {
+            _this.onRemovedRemoteTrack(track);
+        });
+        //my join
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.CONFERENCE_JOINED, function () { _this.onJitsiConferenceJoined(); });
+        //my left
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.CONFERENCE_LEFT, function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+            this.onJitsiConferenceLeft();
+            return [2 /*return*/];
+        }); }); });
+        //remote join
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.USER_JOINED, function (id, user) {
+            _this.onJitsiUserJoined(id, user);
+            //remoteTracks[id] = [];
+        });
+        //remote left
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.USER_LEFT, function (id, user) {
+            _this.onJitsiUserLeft(id, user);
+        });
+        //track mute
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_MUTE_CHANGED, function (track) {
+            _this.onRemoteTrackMuteChanged(track);
+        });
+        //audio level change
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.TRACK_AUDIO_LEVEL_CHANGED, function (userID, audioLevel) {
+            _this.Log(userID + " - " + audioLevel);
+        });
+        //chat
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.MESSAGE_RECEIVED, function (id, message, timestamp) {
+            _this.onReceiveChatMessage(id, message, timestamp);
+        });
+        //name change
+        this.jitsiRoom.on(this.JitsiMeetJS.events.conference.DISPLAY_NAME_CHANGED, function (userID, displayName) {
+            console.log(userID + " - " + displayName);
+        });
+        //command
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.GRANT_HOST_ROLE, function (param) { _this.onChangedModerator(param); });
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.MUTE_AUDIO, function (param) { _this.onMutedAudio(param); });
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.MUTE_VIDEO, function (param) { _this.onMutedVideo(param); });
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.ALLOW_CAMERA, function (param) { _this.onAllowCameraCommand(param); });
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.ALLOW_MIC, function (param) { _this.onAllowMicCommand(param); });
+        //set name
+        this.jitsiRoom.setDisplayName(this.myInfo.Name);
+        for (var i = 0; i < this.localTracks.length; i++) {
+            this.Log("[ OUT ] my track - " + this.localTracks[i].getType());
+            this.jitsiRoom.addTrack(this.localTracks[i]).catch(function (error) {
+                _this.Log(error);
+            });
+        }
+        //joinJitsiConference
+        this.jitsiRoom.join(); //callback -  onJitsiUserJoined
+    };
+    BizGazeMeeting.prototype.leaveJitsiConference = function () {
+    };
+    //my enter room
+    BizGazeMeeting.prototype.onJitsiConferenceJoined = function () {
+        var _this = this;
+        this.myInfo.Jitsi_Id = this.jitsiRoom.myUserId();
+        //set subject
+        this.m_UI.showMeetingSubject(this.roomInfo.conferenceName, this.roomInfo.hostName);
+        //add list
+        if (this.myInfo.IsHost) {
+            this.m_UI.addParticipant(this.jitsiRoom.myUserId(), this.myInfo.Name, true, this.myInfo.useMedia.useCamera, this.myInfo.useMedia.useMic);
+        }
+        //set time
+        setInterval(function () {
+            var delta = Date.now() - _this.localStartTimestamp;
+            var elapsed = _this.roomInfo.elapsed + delta;
+            _this.m_UI.updateTime(TimeUtil_1.TsToDateFormat(elapsed));
+        }, 1000);
+    };
+    //my leave room
+    BizGazeMeeting.prototype.onJitsiConferenceLeft = function () {
+        this.leaveBGConference();
+    };
+    //remote-user enter room
+    BizGazeMeeting.prototype.onJitsiUserJoined = function (jitsiId, user) {
+        var _this = this;
+        this.Log("joined user: " + user.getDisplayName());
+        //if track doesn't arrive for certain time
+        //generate new panel for that user
+        if (!this.roomInfo.IsWebinar) {
+            setTimeout(function () {
+                if (!user.getProperty(UserProperty_1.UserProperty.videoElem)) {
+                    var _a = _this.m_UI.getEmptyVideoPanel(), videoElem = _a.videoElem, audioElem = _a.audioElem;
+                    user.setProperty(UserProperty_1.UserProperty.videoElem, videoElem);
+                    user.setProperty(UserProperty_1.UserProperty.audioElem, audioElem);
+                    _this._updateUserPanel(user);
+                }
+            }, 3000);
+        }
+        //add list
+        if (this.myInfo.IsHost) {
+            //set device policy for him
+            //const deviceUsePolicy = this.getInitialUserDevicePolicy();
+            //user.setProperty(UserProperty.useCamera, deviceUsePolicy.useCamera);
+            //user.setProperty(UserProperty.useMic, deviceUsePolicy.useMic);
+            var hasVideoTrack = user.getTracksByMediaType(MediaType_1.MediaType.VIDEO).length > 0;
+            var hasAudioTrack = user.getTracksByMediaType(MediaType_1.MediaType.AUDIO).length > 0;
+            this.m_UI.addParticipant(jitsiId, user.getDisplayName(), false, hasVideoTrack, hasAudioTrack);
+        }
+        //notify him that i am moderator
+        if (this.myInfo.IsHost)
+            this.grantModeratorRole(this.jitsiRoom.myUserId());
+    };
+    //remote leave room
+    BizGazeMeeting.prototype.onJitsiUserLeft = function (jitsiId, user) {
+        this.Log("left user: " + user.getDisplayName());
+        this.m_UI.freeVideoPanel(user.getProperty(UserProperty_1.UserProperty.videoElem));
+        //remove list
+        if (this.myInfo.IsHost) {
+            this.m_UI.removeParticipant(jitsiId);
+        }
+    };
+    //[ IN ] remote track
+    BizGazeMeeting.prototype.onRemoteTrackAdded = function (track) {
+        if (track.isLocal()) {
+            return;
+        }
+        this.Log("[ IN ] remote track - " + track.getType());
+        var id = track.getParticipantId();
+        var user = this.jitsiRoom.getParticipantById(id);
+        if (!user) {
+            this.Log(user.getDisplayName() + " not yet added");
+            return;
+        }
+        var videoElem = user.getProperty(UserProperty_1.UserProperty.videoElem);
+        if (!videoElem) {
+            var _a = this.m_UI.getEmptyVideoPanel(), videoElem_1 = _a.videoElem, audioElem = _a.audioElem;
+            user.setProperty(UserProperty_1.UserProperty.videoElem, videoElem_1);
+            user.setProperty(UserProperty_1.UserProperty.audioElem, audioElem);
+        }
+        if (track.getType() === MediaType_1.MediaType.VIDEO) {
+            var videoElem_2 = user.getProperty(UserProperty_1.UserProperty.videoElem);
+            track.attach(videoElem_2);
+            videoElem_2.play();
+        }
+        else if (track.getType() === MediaType_1.MediaType.AUDIO) {
+            var audioElem = user.getProperty(UserProperty_1.UserProperty.audioElem);
+            track.attach(audioElem);
+            audioElem.play();
+        }
+        this._updateUserPanel(user);
+    };
+    // [DEL] remote track
+    BizGazeMeeting.prototype.onRemovedRemoteTrack = function (track) {
+        if (track.isLocal()) {
+            this.Log("[ DEL ] localtrack - " + track.getType());
+        }
+        else {
+            this.Log("[ DEL ] remotetrack - " + track.getType());
+        }
+        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_VIDEOTYPE_CHANGED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED);
+        track.removeAllListeners(this.JitsiMeetJS.events.track.NO_DATA_FROM_SOURCE);
+        if (!track.isLocal()) {
+            var jitsiId = track.getParticipantId();
+            var user = this.jitsiRoom.getParticipantById(jitsiId);
+            if (this.roomInfo.IsWebinar) {
+                var IsHost = user.getProperty(UserProperty_1.UserProperty.IsHost);
+                var userVideoElement = user.getProperty(UserProperty_1.UserProperty.videoElem);
+                if (!IsHost && user.getTracks().length <= 0 && userVideoElement) {
+                    this.m_UI.freeVideoPanel(userVideoElement);
+                    user.setProperty(UserProperty_1.UserProperty.videoElem, null);
+                    user.setProperty(UserProperty_1.UserProperty.audioElem, null);
+                }
+            }
+            this._updateUserPanel(user);
+        }
+        else {
+            this.updateUiOnLocalTrackChange();
+        }
+    };
+    BizGazeMeeting.prototype._updateUserPanel = function (user) {
+        if (user && user.getProperty(UserProperty_1.UserProperty.videoElem)) {
+            var videoElem = user.getProperty(UserProperty_1.UserProperty.videoElem);
+            this.m_UI.updatePanelOnJitsiUser(videoElem, this.myInfo, user);
+        }
+    };
+    BizGazeMeeting.prototype._updateMyPanel = function () {
+        if (this.localVideoElem == null) {
+            var _a = this.m_UI.getEmptyVideoPanel(), videoElem = _a.videoElem, audioElem = _a.audioElem;
+            this.localVideoElem = videoElem;
+            this.localAudioElem = audioElem;
+        }
+        if (this.localVideoElem)
+            this.m_UI.updatePanelOnMyBGUser(this.localVideoElem, this.myInfo, this.getLocalTracks());
     };
     /**
      * **************************************************************************
@@ -593,102 +778,81 @@ var BizGazeMeeting = /** @class */ (function () {
      */
     //moderator
     BizGazeMeeting.prototype.grantModeratorRole = function (targetId) {
-        var param = new CommandParam_1.CommandParam();
+        var param = new CommandParam_1.JitsiCommandParam();
         param.value = targetId;
-        this.jitsiRoom.sendCommandOnce(ControlMessageTypes.GRANT_HOST_ROLE, param);
+        this.jitsiRoom.sendCommandOnce(jitsi_1.JitsiCommand.GRANT_HOST_ROLE, param);
     };
     BizGazeMeeting.prototype.onChangedModerator = function (param) {
         var _this = this;
         var targetId = param.value;
-        var user = this.jitsiRoom.getParticipantById(targetId);
-        if (user && !user.getProperty(UserProperty_1.UserProperty.isModerator)) {
-            user.setProperty(UserProperty_1.UserProperty.isModerator, true);
-            this._updateUserPanel(user);
-        }
-        else if (targetId == this.jitsiRoom.myUserId() && !this.myInfo.IsHost) {
+        if (targetId === this.jitsiRoom.myUserId()) {
             this.myInfo.IsHost = true;
             this._updateMyPanel();
             this.jitsiRoom.getParticipants().forEach(function (user) {
                 _this._updateUserPanel(user);
             });
         }
+        else {
+            var user = this.jitsiRoom.getParticipantById(targetId);
+            if (user) {
+                user.setProperty(UserProperty_1.UserProperty.IsHost, true);
+                this._updateUserPanel(user);
+            }
+        }
     };
     //mute/unmute
     BizGazeMeeting.prototype.muteMyAudio = function (mute) {
-        var _this = this;
-        this.localTracks.forEach(function (track) { return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(track.getType() === MediaType_1.MediaType.AUDIO)) return [3 /*break*/, 4];
-                        if (!mute) return [3 /*break*/, 2];
-                        return [4 /*yield*/, track.mute()];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 4];
-                    case 2: return [4 /*yield*/, track.unmute()];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4: return [2 /*return*/];
-                }
-            });
-        }); });
+        this.getLocalTracks().forEach(function (track) {
+            if (track.getType() === MediaType_1.MediaType.AUDIO) {
+                if (mute)
+                    track.mute();
+                else
+                    track.unmute();
+            }
+        });
     };
     BizGazeMeeting.prototype.muteMyVideo = function (mute) {
-        var _this = this;
-        this.localTracks.forEach(function (track) { return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(track.getType() === MediaType_1.MediaType.VIDEO)) return [3 /*break*/, 4];
-                        if (!mute) return [3 /*break*/, 2];
-                        return [4 /*yield*/, track.mute()];
-                    case 1:
-                        _a.sent();
-                        return [3 /*break*/, 4];
-                    case 2: return [4 /*yield*/, track.unmute()];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4: return [2 /*return*/];
-                }
-            });
-        }); });
+        this.getLocalTracks().forEach(function (track) {
+            if (track.getType() === MediaType_1.MediaType.VIDEO) {
+                if (mute)
+                    track.mute();
+                else
+                    track.unmute();
+            }
+        });
     };
     BizGazeMeeting.prototype.muteUserAudio = function (targetId, mute) {
-        var param = new CommandParam_1.CommandParam();
+        var param = new CommandParam_1.JitsiCommandParam();
         param.value = targetId;
         param.attributes = { mute: mute };
-        this.jitsiRoom.sendCommandOnce(ControlMessageTypes.MUTE_AUDIO, param);
+        this.jitsiRoom.sendCommandOnce(jitsi_1.JitsiCommand.MUTE_AUDIO, param);
     };
     BizGazeMeeting.prototype.muteUserVideo = function (targetId, mute) {
-        debugger;
-        var param = new CommandParam_1.CommandParam();
+        var param = new CommandParam_1.JitsiCommandParam();
         param.value = targetId;
         param.attributes = { mute: mute };
-        this.jitsiRoom.sendCommandOnce(ControlMessageTypes.MUTE_VIDEO, param);
+        this.jitsiRoom.sendCommandOnce(jitsi_1.JitsiCommand.MUTE_VIDEO, param);
     };
     //these are called when user press bottom toolbar buttons
     BizGazeMeeting.prototype.OnToggleMuteMyAudio = function () {
-        if (this.myInfo.IsHost) {
-            var audioMuted_1 = false;
-            this.localTracks.forEach(function (track) {
-                if (track.getType() === MediaType_1.MediaType.AUDIO && track.isMuted())
-                    audioMuted_1 = true;
-            });
-            this.muteMyAudio(!audioMuted_1);
-        }
+        //if (this.myInfo.IsHost) {
+        var audioMuted = false;
+        this.getLocalTracks().forEach(function (track) {
+            if (track.getType() === MediaType_1.MediaType.AUDIO && track.isMuted())
+                audioMuted = true;
+        });
+        this.muteMyAudio(!audioMuted);
+        //}
     };
     BizGazeMeeting.prototype.OnToggleMuteMyVideo = function () {
-        if (this.myInfo.IsHost) {
-            var videoMuted_1 = false;
-            this.localTracks.forEach(function (track) {
-                if (track.getType() === MediaType_1.MediaType.VIDEO && track.isMuted())
-                    videoMuted_1 = true;
-            });
-            this.muteMyVideo(!videoMuted_1);
-        }
+        //if (this.myInfo.IsHost) {
+        var videoMuted = false;
+        this.getLocalTracks().forEach(function (track) {
+            if (track.getType() === MediaType_1.MediaType.VIDEO && track.isMuted())
+                videoMuted = true;
+        });
+        this.muteMyVideo(!videoMuted);
+        //}
     };
     BizGazeMeeting.prototype.onMutedAudio = function (param) {
         var targetId = param.value;
@@ -705,16 +869,92 @@ var BizGazeMeeting = /** @class */ (function () {
             this.muteMyVideo(mute);
         }
     };
-    BizGazeMeeting.prototype.onTrackMuteChanged = function (track) {
-        //update ui
-        var id = track.getParticipantId();
-        var user = this.jitsiRoom.getParticipantById(id);
-        if (user) {
-            this._updateUserPanel(user);
+    BizGazeMeeting.prototype.onRemoteTrackMuteChanged = function (track) {
+        if (this.jitsiRoomJoined()) {
+            var id = track.getParticipantId();
+            var user = this.jitsiRoom.getParticipantById(id);
+            if (user) {
+                this._updateUserPanel(user);
+            }
         }
-        else if (id === this.jitsiRoom.myUserId()) {
-            this._updateMyPanel();
-            this.m_UI.updateToolbar(this.myInfo, this.localTracks);
+    };
+    //allow of camera, mic 
+    BizGazeMeeting.prototype.allowCamera = function (jitsiId, allow) {
+        if (!this.myInfo.IsHost)
+            return;
+        if (jitsiId === this.jitsiRoom.myUserId()) {
+            this.onAllowCamera(allow);
+        }
+        else {
+            var param = new CommandParam_1.JitsiCommandParam();
+            param.value = jitsiId;
+            param.attributes = { allow: allow };
+            this.jitsiRoom.sendCommandOnce(jitsi_1.JitsiCommand.ALLOW_CAMERA, param);
+        }
+    };
+    BizGazeMeeting.prototype.allowMic = function (jitsiId, allow) {
+        if (!this.myInfo.IsHost)
+            return;
+        if (jitsiId === this.jitsiRoom.myUserId()) {
+            this.onAllowMic(allow);
+        }
+        else {
+            var param = new CommandParam_1.JitsiCommandParam();
+            param.value = jitsiId;
+            param.attributes = { allow: allow };
+            this.jitsiRoom.sendCommandOnce(jitsi_1.JitsiCommand.ALLOW_MIC, param);
+        }
+    };
+    BizGazeMeeting.prototype.onAllowCameraCommand = function (param) {
+        var targetId = param.value;
+        if (targetId != this.jitsiRoom.myUserId())
+            return;
+        var allow = param.attributes.allow === "true";
+        this.onAllowCamera(allow);
+    };
+    BizGazeMeeting.prototype.onAllowCamera = function (allow) {
+        var _this = this;
+        if (allow) {
+            this.createVideoTrack(this.activeCameraId)
+                .then(function (tracks) {
+                _this.onLocalTrackAdded(tracks);
+            });
+        }
+        else {
+            //remove track
+            var localVideoTrack_1 = this.getLocalTrackByType(MediaType_1.MediaType.VIDEO);
+            if (localVideoTrack_1) {
+                this.removeLocalTrack(localVideoTrack_1).then(function (_) {
+                    localVideoTrack_1.dispose();
+                    _this.updateUiOnLocalTrackChange();
+                });
+            }
+        }
+    };
+    BizGazeMeeting.prototype.onAllowMicCommand = function (param) {
+        var targetId = param.value;
+        if (targetId != this.jitsiRoom.myUserId())
+            return;
+        var allow = param.attributes.allow === "true";
+        this.onAllowMic(allow);
+    };
+    BizGazeMeeting.prototype.onAllowMic = function (allow) {
+        var _this = this;
+        if (allow) {
+            this.createAudioTrack(this.activeMicId)
+                .then(function (tracks) {
+                _this.onLocalTrackAdded(tracks);
+            });
+        }
+        else {
+            //remove track
+            var localAudioTrack_1 = this.getLocalTrackByType(MediaType_1.MediaType.AUDIO);
+            if (localAudioTrack_1) {
+                this.removeLocalTrack(localAudioTrack_1).then(function (_) {
+                    localAudioTrack_1.dispose();
+                    _this.updateUiOnLocalTrackChange();
+                });
+            }
         }
     };
     //screenshare
@@ -749,44 +989,20 @@ var BizGazeMeeting = /** @class */ (function () {
                             devices: ['desktop']
                         })
                             .then(function (tracks) { return __awaiter(_this, void 0, void 0, function () {
-                            var screenTrack, i, oldTrack;
+                            var screenTrack;
                             var _this = this;
                             return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        if (tracks.length <= 0) {
-                                            return [2 /*return*/];
-                                        }
-                                        screenTrack = tracks[0];
-                                        screenTrack.addEventListener(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED, function () { return _this.Log('screen - mute chagned'); });
-                                        screenTrack.addEventListener(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, function () {
-                                            _this.Log('screen - stopped');
-                                            _this.toggleScreenShare();
-                                        });
-                                        i = 0;
-                                        oldTrack = null;
-                                        while (i < this.localTracks.length) {
-                                            if (this.localTracks[i].getType() === MediaType_1.MediaType.VIDEO) {
-                                                oldTrack = this.localTracks[i];
-                                                break;
-                                            }
-                                            else {
-                                                ++i;
-                                            }
-                                        }
-                                        return [4 /*yield*/, this.jitsiRoom.replaceTrack(oldTrack, screenTrack).then(function () {
-                                                if (oldTrack) {
-                                                    oldTrack.dispose();
-                                                    _this.localTracks.splice(i, 1);
-                                                }
-                                                _this.localTracks.push(screenTrack);
-                                                screenTrack.attach(_this.localVideoElem);
-                                                _this.screenSharing = true;
-                                            })];
-                                    case 1:
-                                        _a.sent();
-                                        return [2 /*return*/];
+                                if (tracks.length <= 0) {
+                                    throw new Error("No Screen Selected");
                                 }
+                                screenTrack = tracks[0];
+                                this.onLocalTrackAdded([screenTrack]);
+                                screenTrack.addEventListener(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, function () {
+                                    _this.Log('screen - stopped');
+                                    _this.toggleScreenShare();
+                                });
+                                this.screenSharing = true;
+                                return [2 /*return*/];
                             });
                         }); })
                             .catch(function (error) {
@@ -808,45 +1024,20 @@ var BizGazeMeeting = /** @class */ (function () {
                             devices: [MediaType_1.MediaType.VIDEO]
                         })
                             .then(function (tracks) { return __awaiter(_this, void 0, void 0, function () {
-                            var videoTrack, i, oldTrack;
-                            var _this = this;
+                            var cameraTrack;
                             return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        if (tracks.length <= 0)
-                                            return [2 /*return*/];
-                                        videoTrack = tracks[0];
-                                        this.localTracks.push(videoTrack);
-                                        videoTrack.addEventListener(this.JitsiMeetJS.events.track.TRACK_MUTE_CHANGED, function () { return _this.Log('local track muted'); });
-                                        videoTrack.addEventListener(this.JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, function () { return _this.Log('local track stoped'); });
-                                        i = 0;
-                                        oldTrack = null;
-                                        while (i < this.localTracks.length) {
-                                            if (this.localTracks[i].getType() === MediaType_1.MediaType.VIDEO) {
-                                                oldTrack = this.localTracks[i];
-                                                break;
-                                            }
-                                            else {
-                                                ++i;
-                                            }
-                                        }
-                                        return [4 /*yield*/, this.jitsiRoom.replaceTrack(oldTrack, videoTrack).then(function () {
-                                                if (oldTrack) {
-                                                    oldTrack.dispose();
-                                                    _this.localTracks.splice(i, 1);
-                                                }
-                                                _this.localTracks.push(videoTrack);
-                                                videoTrack.attach(_this.localVideoElem);
-                                                _this.screenSharing = false;
-                                            })];
-                                    case 1:
-                                        _a.sent();
-                                        return [2 /*return*/];
+                                if (tracks.length <= 0) {
+                                    return [2 /*return*/];
                                 }
+                                debugger;
+                                cameraTrack = tracks[0];
+                                this.onLocalTrackAdded([cameraTrack]);
+                                this.screenSharing = false;
+                                return [2 /*return*/];
                             });
                         }); })
                             .catch(function (error) {
-                            _this.screenSharing = true;
+                            _this.screenSharing = false;
                             console.log(error);
                         })];
                     case 1:
@@ -861,11 +1052,11 @@ var BizGazeMeeting = /** @class */ (function () {
         this.jitsiRoom.sendTextMessage(msg);
     };
     BizGazeMeeting.prototype.onReceiveChatMessage = function (id, msg, timestamp) {
-        if (this.jitsiRoom.myUserId === id)
+        if (this.jitsiRoom.myUserId() === id)
             return;
         var user = this.jitsiRoom.getParticipantById(id);
         if (user) {
-            this.m_UI.receiveMessage(user.getDisplayName(), msg, timestamp);
+            this.m_UI.onChatMessage(user.getDisplayName(), msg, timestamp);
         }
     };
     BizGazeMeeting.prototype.toggleRecording = function () {
@@ -981,7 +1172,7 @@ var BizGazeMeeting = /** @class */ (function () {
     BizGazeMeeting.prototype.getRecordingFilename = function () {
         var now = new Date();
         var timestamp = now.toISOString();
-        return this.roomInfo.subject + "_recording_" + timestamp;
+        return this.roomInfo.conferenceName + "_recording_" + timestamp;
     };
     BizGazeMeeting.prototype.mixer = function (stream1, stream2) {
         var ctx = new AudioContext();

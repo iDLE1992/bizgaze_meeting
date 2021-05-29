@@ -1,5 +1,5 @@
 ﻿import { JitsiTrack } from "./JitsiTrack";
-import { MediaType } from "./MediaType";
+import { MediaType } from "../enum/MediaType";
 
 export interface JitsiParticipant {
     getConference(): any; //JitsiConference
