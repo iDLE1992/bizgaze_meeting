@@ -83,39 +83,39 @@ var MeetingUI = /** @class */ (function () {
         this.participantsListPanel.init(lProps);
     }
     MeetingUI.prototype.registerEventHandlers = function () {
-        var _this_1 = this;
+        var _this = this;
         $(window).resize(function () {
-            _this_1.refreshCardViews();
+            _this.refreshCardViews();
         });
         window.addEventListener('unload', function () {
-            _this_1.meeting.forceStop();
+            _this.meeting.forceStop();
         });
         $(document).ready(function () {
-            _this_1.refreshCardViews();
-            var _this = _this_1;
-            $(_this_1.toolbarLeaveButtonElement).click(function () {
-                _this_1.meeting.stop();
+            _this.refreshCardViews();
+            var _this = _this;
+            $(_this.toolbarLeaveButtonElement).click(function () {
+                _this.meeting.stop();
             });
-            if (_this_1.meeting.config.hideToolbarOnMouseOut) {
+            if (_this.meeting.config.hideToolbarOnMouseOut) {
                 $("#content").hover(function (_) {
-                    $(_this_1.toolbarElement).addClass("visible");
-                    if (_this_1.initTopInfo)
-                        $(_this_1.topInfobarElement).addClass("visible");
+                    $(_this.toolbarElement).addClass("visible");
+                    if (_this.initTopInfo)
+                        $(_this.topInfobarElement).addClass("visible");
                 }, function (_) {
-                    $(_this_1.toolbarElement).removeClass("visible");
-                    if (_this_1.initTopInfo)
-                        $(_this_1.topInfobarElement).removeClass("visible");
+                    $(_this.toolbarElement).removeClass("visible");
+                    if (_this.initTopInfo)
+                        $(_this.topInfobarElement).removeClass("visible");
                 }).click(function () {
-                    $("." + _this_1.popupMenuClass).removeClass("visible");
+                    $("." + _this.popupMenuClass).removeClass("visible");
                 });
             }
             else {
-                $(_this_1.toolbarElement).addClass("visible");
-                if (_this_1.initTopInfo)
-                    $(_this_1.topInfobarElement).addClass("visible");
+                $(_this.toolbarElement).addClass("visible");
+                if (_this.initTopInfo)
+                    $(_this.topInfobarElement).addClass("visible");
             }
             $("#mic-enable").click(function () {
-                _this_1.meeting.OnToggleMuteMyAudio();
+                _this.meeting.OnToggleMuteMyAudio();
                 /*var el = $(this).find(".toolbox-icon");
                 el.toggleClass("toggled");
                 if (el.hasClass("toggled")) {
@@ -128,7 +128,7 @@ var MeetingUI = /** @class */ (function () {
                 }*/
             });
             $("#camera-enable").click(function () {
-                _this_1.meeting.OnToggleMuteMyVideo();
+                _this.meeting.OnToggleMuteMyVideo();
                 /*var el = $(this).find(".toolbox-icon");
                 el.toggleClass("toggled");
                 if (el.hasClass("toggled")) {
@@ -137,17 +137,17 @@ var MeetingUI = /** @class */ (function () {
                     el.find("path").attr("d", "M13.75 5.5H3.667c-1.013 0-1.834.82-1.834 1.833v7.334c0 1.012.821 1.833 1.834 1.833H13.75c1.012 0 1.833-.82 1.833-1.833v-.786l3.212 1.835a.916.916 0 001.372-.796V7.08a.917.917 0 00-1.372-.796l-3.212 1.835v-.786c0-1.012-.82-1.833-1.833-1.833zm0 3.667v5.5H3.667V7.333H13.75v1.834zm4.583 4.174l-2.75-1.572v-1.538l2.75-1.572v4.682z");
                 }*/
             });
-            $(_this_1.toolbarChatButtonElement).on('click', function (_) {
-                _this_1.chattingPanel.toggleOpen();
+            $(_this.toolbarChatButtonElement).on('click', function (_) {
+                _this.chattingPanel.toggleOpen();
             });
-            $(_this_1.toolbarDesktopShareButtonElement).on("click", function () {
-                _this_1.meeting.toggleScreenShare();
+            $(_this.toolbarDesktopShareButtonElement).on("click", function () {
+                _this.meeting.toggleScreenShare();
             });
-            $(_this_1.toolbarRecordButtonElement).on('click', function () {
-                _this_1.meeting.toggleRecording();
+            $(_this.toolbarRecordButtonElement).on('click', function () {
+                _this.meeting.toggleRecording();
             });
-            $(_this_1.toolbarSettingButtonElement).on('click', function () {
-                _this_1.showSettingDialog();
+            $(_this.toolbarSettingButtonElement).on('click', function () {
+                _this.showSettingDialog();
             });
         });
     };
@@ -258,7 +258,7 @@ var MeetingUI = /** @class */ (function () {
         this.refreshCardViews();
     };
     MeetingUI.prototype.updatePanelOnJitsiUser = function (videoElem, myInfo, user) {
-        var _this_1 = this;
+        var _this = this;
         var panel = this._getPanelFromVideoElement(videoElem);
         if (!panel)
             return;
@@ -323,20 +323,20 @@ var MeetingUI = /** @class */ (function () {
         //popup menu handlers
         if (myInfo.IsHost) {
             $(grantModeratorPopupMenu).unbind('click').on('click', function () {
-                _this_1.meeting.grantModeratorRole(user.getId());
+                _this.meeting.grantModeratorRole(user.getId());
             });
             $(audioMutePopupMenu).unbind('click').on('click', function () {
-                _this_1.meeting.muteUserAudio(user.getId(), !user.isAudioMuted());
+                _this.meeting.muteUserAudio(user.getId(), !user.isAudioMuted());
             });
             $(videoMutePopupMenu).unbind('click').on('click', function () {
-                _this_1.meeting.muteUserVideo(user.getId(), !user.isVideoMuted());
+                _this.meeting.muteUserVideo(user.getId(), !user.isVideoMuted());
             });
         }
         //active speaker(blue border)
         $(panel).removeClass(this.activeSpeakerClass);
     };
     MeetingUI.prototype.updatePanelOnMyBGUser = function (videoElem, myInfo, localTracks) {
-        var _this_1 = this;
+        var _this = this;
         var panel = this._getPanelFromVideoElement(videoElem);
         if (!panel)
             return;
@@ -395,10 +395,10 @@ var MeetingUI = /** @class */ (function () {
         //popup menu handlers
         if (myInfo.IsHost) {
             $(audioMutePopupMenu).unbind('click').on('click', function () {
-                _this_1.meeting.muteMyAudio(!audioMuted);
+                _this.meeting.muteMyAudio(!audioMuted);
             });
             $(videoMutePopupMenu).unbind('click').on('click', function () {
-                _this_1.meeting.muteMyVideo(!videoMuted);
+                _this.meeting.muteMyVideo(!videoMuted);
             });
         }
         //bottom small icons

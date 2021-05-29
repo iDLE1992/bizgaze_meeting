@@ -94,8 +94,8 @@ var BizGazeMeeting = /** @class */ (function () {
             },
         };
         this.JitsiMeetJS = window.JitsiMeetJS;
-        this.JitsiServerDomain = "idlests.com";
-        //JitsiServerDomain = "unimail.in";
+        //JitsiServerDomain = "idlests.com";
+        this.JitsiServerDomain = "unimail.in";
         this.localTracks = [];
         this.screenSharing = false;
         this.recording = false;

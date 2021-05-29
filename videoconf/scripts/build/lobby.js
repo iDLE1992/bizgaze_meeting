@@ -30,34 +30,34 @@ var Lobby = /** @class */ (function () {
         this.startSessionButton = document.getElementById("start-session");
     }
     Lobby.prototype.start = function () {
-        var _this_1 = this;
+        var _this = this;
         var initOptions = {
             disableAudioLevels: true
         };
         this.JitsiMeetJS.init(initOptions);
         $(document).ready(function () {
-            _this_1.resizeCameraView();
-            _this_1.attachEventHandlers();
-            _this_1.refreshDeviceList();
-            $(_this_1.startSessionButton).prop('disabled', true);
-            _this_1.videoMuteElem.checked = true;
-            _this_1.audioMuteElem.checked = true;
+            _this.resizeCameraView();
+            _this.attachEventHandlers();
+            _this.refreshDeviceList();
+            $(_this.startSessionButton).prop('disabled', true);
+            _this.videoMuteElem.checked = true;
+            _this.audioMuteElem.checked = true;
             $.ajax({
-                url: "/api/Meeting/" + _this_1.conferenceId,
+                url: "/api/Meeting/" + _this.conferenceId,
                 type: "GET",
                 data: "",
                 dataType: 'json',
                 success: function (res) {
-                    _this_1.onMeetingResult(res);
+                    _this.onMeetingResult(res);
                 },
                 error: function (xhr, status, error) {
-                    _this_1.onMeetingErrorResult(error);
+                    _this.onMeetingErrorResult(error);
                 }
             });
         });
     };
     Lobby.prototype.attachEventHandlers = function () {
-        var _this_1 = this;
+        var _this = this;
         var _this = this;
         $(this.cameraListElem).on('change', function () {
             _this.onCameraChanged($(this).val());
@@ -69,34 +69,34 @@ var Lobby = /** @class */ (function () {
             _this.onSpeakerChanged($(this).val());
         });
         $(this.startSessionButton).on('click', function () {
-            _this_1.startSession();
+            _this.startSession();
         });
         $(window).resize(function () {
-            _this_1.resizeCameraView();
+            _this.resizeCameraView();
         });
     };
     Lobby.prototype.refreshDeviceList = function () {
-        var _this_1 = this;
+        var _this = this;
         this.JitsiMeetJS.mediaDevices.enumerateDevices(function (devices) {
-            _this_1.cameraList = devices.filter(function (d) { return d.kind === 'videoinput'; });
-            _this_1.micList = devices.filter(function (d) { return d.kind === 'audioinput'; });
-            _this_1.speakerList = devices.filter(function (d) { return d.kind === 'audiooutput'; });
-            _this_1.renderDevices();
+            _this.cameraList = devices.filter(function (d) { return d.kind === 'videoinput'; });
+            _this.micList = devices.filter(function (d) { return d.kind === 'audioinput'; });
+            _this.speakerList = devices.filter(function (d) { return d.kind === 'audiooutput'; });
+            _this.renderDevices();
         });
     };
     Lobby.prototype.renderDevices = function () {
-        var _this_1 = this;
+        var _this = this;
         this.clearDOMElement(this.cameraListElem);
         this.cameraList.forEach(function (camera) {
-            $(_this_1.cameraListElem).append("<option value=\"" + camera.deviceId + "\">" + camera.label + "</option>");
+            $(_this.cameraListElem).append("<option value=\"" + camera.deviceId + "\">" + camera.label + "</option>");
         });
         this.clearDOMElement(this.micListElem);
         this.micList.forEach(function (mic) {
-            $(_this_1.micListElem).append("<option value=\"" + mic.deviceId + "\">" + mic.label + "</option>");
+            $(_this.micListElem).append("<option value=\"" + mic.deviceId + "\">" + mic.label + "</option>");
         });
         this.clearDOMElement(this.speakerListElem);
         this.speakerList.forEach(function (speaker) {
-            $(_this_1.speakerListElem).append("<option value=\"" + speaker.deviceId + "\">" + speaker.label + "</option>");
+            $(_this.speakerListElem).append("<option value=\"" + speaker.deviceId + "\">" + speaker.label + "</option>");
         });
         this.activeCameraDeviceId = this.cameraList.length > 0 ? this.cameraList[0].deviceId : null;
         this.activeMicDeviceId = this.micList.length > 0 ? this.micList[0].deviceId : null;
@@ -105,10 +105,10 @@ var Lobby = /** @class */ (function () {
             .then(function (tracks) {
             tracks.forEach(function (t) {
                 if (t.getType() === MediaType_1.MediaType.VIDEO) {
-                    t.attach(_this_1.videoPreviewElem);
+                    t.attach(_this.videoPreviewElem);
                 }
                 else if (t.getType() === MediaType_1.MediaType.AUDIO) {
-                    t.attach(_this_1.audioPreviewElem);
+                    t.attach(_this.audioPreviewElem);
                 }
             });
         });
@@ -119,7 +119,7 @@ var Lobby = /** @class */ (function () {
         }
     };
     Lobby.prototype.createLocalTracks = function (cameraDeviceId, micDeviceId) {
-        var _this_1 = this;
+        var _this = this;
         this.videoTrackError = null;
         this.audioTrackError = null;
         if (cameraDeviceId != null && micDeviceId != null) {
@@ -128,19 +128,19 @@ var Lobby = /** @class */ (function () {
                 cameraDeviceId: cameraDeviceId,
                 micDeviceId: micDeviceId
             }).catch(function () { return Promise.all([
-                _this_1.createAudioTrack(micDeviceId).then(function (_a) {
+                _this.createAudioTrack(micDeviceId).then(function (_a) {
                     var stream = _a[0];
                     return stream;
                 }),
-                _this_1.createVideoTrack(cameraDeviceId).then(function (_a) {
+                _this.createVideoTrack(cameraDeviceId).then(function (_a) {
                     var stream = _a[0];
                     return stream;
                 })
             ]); }).then(function (tracks) {
-                if (_this_1.audioTrackError) {
+                if (_this.audioTrackError) {
                     //display error
                 }
-                if (_this_1.videoTrackError) {
+                if (_this.videoTrackError) {
                     //display error
                 }
                 return tracks.filter(function (t) { return typeof t !== 'undefined'; });
@@ -155,49 +155,49 @@ var Lobby = /** @class */ (function () {
         return Promise.resolve([]);
     };
     Lobby.prototype.createVideoTrack = function (cameraDeviceId) {
-        var _this_1 = this;
+        var _this = this;
         return this.JitsiMeetJS.createLocalTracks({
             devices: ['video'],
             cameraDeviceId: cameraDeviceId,
             micDeviceId: null
         })
             .catch(function (error) {
-            _this_1.videoTrackError = error;
+            _this.videoTrackError = error;
             return Promise.resolve([]);
         });
     };
     Lobby.prototype.createAudioTrack = function (micDeviceId) {
-        var _this_1 = this;
+        var _this = this;
         return (this.JitsiMeetJS.createLocalTracks({
             devices: ['audio'],
             cameraDeviceId: null,
             micDeviceId: micDeviceId
         })
             .catch(function (error) {
-            _this_1.audioTrackError = error;
+            _this.audioTrackError = error;
             return Promise.resolve([]);
         }));
     };
     Lobby.prototype.onCameraChanged = function (cameraDeviceId) {
-        var _this_1 = this;
+        var _this = this;
         this.activeCameraDeviceId = cameraDeviceId;
         this.createLocalTracks(this.activeCameraDeviceId, null)
             .then(function (tracks) {
             tracks.forEach(function (t) {
                 if (t.getType() === MediaType_1.MediaType.VIDEO) {
-                    t.attach(_this_1.videoPreviewElem);
+                    t.attach(_this.videoPreviewElem);
                 }
             });
         });
     };
     Lobby.prototype.onMicChanged = function (micDeviceId) {
-        var _this_1 = this;
+        var _this = this;
         this.activeMicDeviceId = micDeviceId;
         this.createLocalTracks(null, this.activeMicDeviceId)
             .then(function (tracks) {
             tracks.forEach(function (t) {
                 if (t.getType() === MediaType_1.MediaType.AUDIO) {
-                    t.attach(_this_1.audioPreviewElem);
+                    t.attach(_this.audioPreviewElem);
                 }
             });
         });
@@ -227,7 +227,7 @@ var Lobby = /** @class */ (function () {
         $("form").submit();
     };
     Lobby.prototype.onMeetingResult = function (meeting) {
-        var _this_1 = this;
+        var _this = this;
         var hosts = meeting.Participants.filter(function (p) { return p.ParticipantType === ParticipantType_1.ParticipantType.Host; });
         if (hosts.length === 1)
             this.setOrganizerName(hosts[0].ParticipantName);
@@ -239,11 +239,11 @@ var Lobby = /** @class */ (function () {
                 .show()
                 .focus()
                 .keyup(function (_) {
-                $(_this_1.startSessionButton).prop('disabled', _this_1.anonymousNameFiled.value.trim().length <= 0);
+                $(_this.startSessionButton).prop('disabled', _this.anonymousNameFiled.value.trim().length <= 0);
             }).keypress(function (e) {
                 if ((e.keyCode || e.which) == 13) { //Enter keycode
                     e.preventDefault();
-                    _this_1.startSession();
+                    _this.startSession();
                 }
             });
         }
