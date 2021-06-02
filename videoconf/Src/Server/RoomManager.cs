@@ -180,7 +180,7 @@ namespace BizGazeMeeting.Server
         private List<Meeting> meetingListForPOC = new List<Meeting>();
         public List<Meeting> GetAllRoomInfo()
         {
-            if (meetingListForPOC.Count <= 0)
+            //if (meetingListForPOC.Count <= 0)
             {
                 meetingListForPOC = _meetingService.Get();
             }
