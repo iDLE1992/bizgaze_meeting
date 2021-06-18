@@ -13,7 +13,7 @@ gulp.task("clean", async function () {
 });
 
 gulp.task("copy_ts", async function () {
-    gulp.src(paths.scripts).pipe(gulp.dest("wwwroot/scripts"));
+    //gulp.src(paths.scripts).pipe(gulp.dest("wwwroot/scripts"));
 });
 
 gulp.task('copy_js', async function () {

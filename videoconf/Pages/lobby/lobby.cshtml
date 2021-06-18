@@ -40,8 +40,12 @@
                                 </div>
                             </div>
 
-                            <video autoplay playsinline class="rounded shadow-sm  w-100 mb-1" novalidate="novalidate" id="camera-preview">
-                            </video>
+                            <div class="rounded shadow-sm w-100 mb-1 position-relative overflow-hidden" id="camera-preview-container">
+                                <video id="camera-preview" autoplay playsinline novalidate="novalidate" class="w-100 h-100 d-none">
+                                </video>
+                                <img id="no-camera-icon" class="position-absolute top-0 bottom-0 start-0 end-0 m-auto" style="width:30%;" src="~/img/no_camera.png"/>
+                            </div>
+                            
                             <div>
                                 <select id="camera-list" class="form-select form-select-solid select2-hidden-accessible" data-kt-select2="true"
                                         data-placeholder="Choose camera" data-allow-clear="true" tabindex="-1" aria-hidden="true">

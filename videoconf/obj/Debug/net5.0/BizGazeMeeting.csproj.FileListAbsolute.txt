@@ -1483,4 +1483,5 @@ F:\1_Bizgaze_webrtc\_Project\bizgaze_meeting\videoconf\obj\Debug\net5.0\ref\BizG
 F:\1_Bizgaze_webrtc\_Project\bizgaze_meeting\videoconf\obj\Debug\net5.0\BizGazeMeeting.pdb
 F:\1_Bizgaze_webrtc\_Project\bizgaze_meeting\videoconf\obj\Debug\net5.0\BizGazeMeeting.genruntimeconfig.cache
 F:\1_Bizgaze_webrtc\_Project\bizgaze_meeting\videoconf\obj\Debug\net5.0\Razor\Pages\lobby\lobby.cshtml.g.cs
+F:\1_Bizgaze_webrtc\_Project\bizgaze_meeting\videoconf\obj\Debug\net5.0\Razor\Pages\noaccess\index.cshtml.g.cs
 F:\1_Bizgaze_webrtc\_Project\bizgaze_meeting\videoconf\obj\Debug\net5.0\BizGazeMeeting.csprojAssemblyReference.cache

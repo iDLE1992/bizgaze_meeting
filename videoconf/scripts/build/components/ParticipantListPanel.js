@@ -37,7 +37,10 @@ var ParticipantItem = /** @class */ (function () {
         ];
         $(this.avatarElement).css("background-color", avatarColors[snippet_1.random(0, avatarColors.length)]);
         //name
-        $(this.nameElement).html(this.props.name);
+        if (this.props.me)
+            $(this.nameElement).html(this.props.name + " (Me)");
+        else
+            $(this.nameElement).html(this.props.name);
         //icon
         this.updateCameraIcon();
         this.updateMicIcon();
@@ -55,14 +58,33 @@ var ParticipantItem = /** @class */ (function () {
         $(this.rootElement).remove();
     };
     ParticipantItem.prototype.onToggleCamera = function () {
+        if (!this.isHost)
+            return;
         this.useCamera = !this.useCamera;
         this.updateCameraIcon();
         this.props.onUseCamera(this.props.jitsiId, this.useCamera);
     };
     ParticipantItem.prototype.onToggleMic = function () {
+        if (!this.isHost)
+            return;
         this.useMic = !this.useMic;
         this.updateMicIcon();
         this.props.onUseMic(this.props.jitsiId, this.useMic);
+    };
+    ParticipantItem.prototype.blockMic = function () {
+        if (this.useMic)
+            this.onToggleMic();
+    };
+    ParticipantItem.prototype.setMicState = function (use) {
+        this.useMic = use;
+        this.updateMicIcon();
+    };
+    ParticipantItem.prototype.setCameraState = function (use) {
+        this.useCamera = use;
+        this.updateCameraIcon();
+    };
+    ParticipantItem.prototype.setRole = function (isHost) {
+        this.isHost = isHost;
     };
     ParticipantItem.prototype.updateCameraIcon = function () {
         var icon = this.useCamera ? vector_icon_1.VectorIcon.VIDEO_UNMUTE_ICON : vector_icon_1.VectorIcon.VIDEO_MUTE_ICON;
@@ -84,13 +106,26 @@ var ParticipantListPanel = /** @class */ (function () {
     function ParticipantListPanel() {
         //states
         this.participantItemMap = new Map();
+        this.isHost = false;
         this.rootElement = document.getElementById("participants-list");
-        this.participantCountElement = $(this.rootElement).find("#participant-count")[0];
-        this.participantListElement = $(this.rootElement).find("#participants-list-body")[0];
+        var $root = $(this.rootElement);
+        this.participantCountElement = $root.find("#participant-count")[0];
+        this.participantListElement = $root.find("#participants-list-body")[0];
+        this.muteAllButtonElement = $root.find("#participants-list-footer>.btn")[0];
     }
     ParticipantListPanel.prototype.init = function (props) {
         this.props = props;
         this.updateParticipantCount();
+        this.attachHandlers();
+    };
+    ParticipantListPanel.prototype.attachHandlers = function () {
+        var _this = this;
+        $(this.muteAllButtonElement).on('click', function () {
+            if (_this.isHost)
+                _this.participantItemMap.forEach(function (participantItem, key) {
+                    participantItem.blockMic();
+                });
+        });
     };
     ParticipantListPanel.prototype.addParticipant = function (jitsiId, name, me, useCamera, useMic) {
         if (this.participantItemMap.has(jitsiId)) {
@@ -98,12 +133,14 @@ var ParticipantListPanel = /** @class */ (function () {
         }
         var props = new ParticipantItemProps();
         props.jitsiId = jitsiId;
-        props.name = me ? name + " (Me)" : name;
+        props.name = name;
+        props.me = me;
         props.useCamera = useCamera;
         props.useMic = useMic;
         props.onUseCamera = this.props.onUseCamera;
         props.onUseMic = this.props.onUseMic;
         var item = new ParticipantItem(props);
+        item.setRole(this.isHost);
         this.participantItemMap.set(jitsiId, item);
         this.updateParticipantCount();
         if (me) {
@@ -114,7 +151,7 @@ var ParticipantListPanel = /** @class */ (function () {
         }
     };
     ParticipantListPanel.prototype.removeParticipant = function (jitsiId) {
-        if (this.participantItemMap.size <= 0 || !this.participantItemMap.has(jitsiId))
+        if (!this.participantItemMap.has(jitsiId))
             return;
         this.participantItemMap.get(jitsiId).removeSelf();
         this.participantItemMap.delete(jitsiId);
@@ -122,6 +159,27 @@ var ParticipantListPanel = /** @class */ (function () {
     };
     ParticipantListPanel.prototype.updateParticipantCount = function () {
         this.participantCountElement.innerHTML = "" + this.participantItemMap.size;
+    };
+    ParticipantListPanel.prototype.setCameraMediaPolicy = function (jitsiId, useCamera) {
+        var item = this.participantItemMap.get(jitsiId);
+        if (item)
+            item.setCameraState(useCamera);
+    };
+    ParticipantListPanel.prototype.setMicMediaPolicy = function (jitsiId, useMic) {
+        var item = this.participantItemMap.get(jitsiId);
+        if (item)
+            item.setMicState(useMic);
+    };
+    ParticipantListPanel.prototype.updateByRole = function (isHost) {
+        this.isHost = isHost;
+        if (isHost)
+            $(this.rootElement).addClass("is-host");
+        else
+            $(this.rootElement).removeClass("is-host");
+        this.muteAllButtonElement.style.visibility = isHost ? "visible" : "hidden";
+        this.participantItemMap.forEach(function (participantItem, key) {
+            participantItem.setRole(isHost);
+        });
     };
     return ParticipantListPanel;
 }());

@@ -16,14 +16,19 @@ exports.ChattingPanelProps = ChattingPanelProps;
 var ChattingPanel = /** @class */ (function () {
     function ChattingPanel() {
         this.unreadCount = 0;
+        this.isPrivate = false;
         this.nameColors = [];
         this.remainColors = [];
     }
     ChattingPanel.prototype.init = function (props) {
         this.props = props;
-        this.container = document.querySelector("#sideToolbarContainer");
+        this.root = document.getElementById("sideToolbarContainer");
         this.closeButton = document.querySelector(".chat-close-button");
         this.inputField = document.querySelector("#chat-input #usermsg");
+        this.sendButton = document.querySelector(".send-button");
+        this.privatePanel = document.querySelector("#chat-recipient");
+        this.privateLabelElement = $(this.privatePanel).find(">span")[0];
+        this.privateCloseElement = $(this.privatePanel).find(">div")[0];
         this.nameColors.push("#00bfff"); //deepskyblue
         this.nameColors.push("#9acd32"); //yellowgreen
         this.nameColors.push("#d2691e"); //chocolate
@@ -46,9 +51,12 @@ var ChattingPanel = /** @class */ (function () {
             if ((e.keyCode || e.which) == 13) { //Enter keycode
                 if (!e.shiftKey) {
                     e.preventDefault();
-                    _this_1.onEnter();
+                    _this_1.onSend();
                 }
             }
+        });
+        $(this.sendButton).on('click', function () {
+            _this_1.onSend();
         });
         var _this = this;
         $(".smileyContainer").click(function () {
@@ -75,25 +83,31 @@ var ChattingPanel = /** @class */ (function () {
                 el.addClass("hide-smileys");
             }
         });
+        $(this.privateCloseElement).click(function (_) {
+            _this_1.clearPrivateState();
+        });
     };
     ChattingPanel.prototype.open = function (opened) {
         if (opened) {
             $("#video-panel").addClass("shift-right");
             $("#new-toolbox").addClass("shift-right");
-            $(this.container).removeClass("invisible");
+            $(this.root).removeClass("invisible");
             $(this.inputField).focus();
             $(".toolbox-icon", this.props.chatOpenButton).addClass("toggled");
         }
         else {
             $("#video-panel").removeClass("shift-right");
             $("#new-toolbox").removeClass("shift-right");
-            $(this.container).addClass("invisible");
+            $(this.root).addClass("invisible");
             $(".toolbox-icon", this.props.chatOpenButton).removeClass("toggled");
         }
         this.unreadCount = 0;
         this.showUnreadBadge(false);
         this.opened = opened;
         this.props.openCallback();
+    };
+    ChattingPanel.prototype.clearInput = function () {
+        $(this.inputField).val('');
     };
     ChattingPanel.prototype.showUnreadBadge = function (show) {
         this.props.unreadBadgeElement.style.display = !!show ? "flex" : "none";
@@ -102,46 +116,37 @@ var ChattingPanel = /** @class */ (function () {
         this.opened = !this.opened;
         this.open(this.opened);
     };
-    ChattingPanel.prototype.onEnter = function () {
-        var sms = $(this.inputField).val().toString().trim();
-        $(this.inputField).val('');
-        if (!sms)
+    ChattingPanel.prototype.onSend = function () {
+        var msg = $(this.inputField).val().toString().trim();
+        this.clearInput();
+        if (!msg)
             return;
-        sms = this.emonameToEmoicon(sms);
+        msg = this.emonameToEmoicon(msg);
         var time = this.getCurTime();
+        var privateClass = this.isPrivate ? "private" : "";
+        var privateDetail = "";
+        if (this.isPrivate) {
+            privateDetail = "<div style=\"color:#778899\">private: " + this.privateSenderName + "</div>";
+        }
         var sel = $("#chatconversation div.chat-message-group:last-child");
         if (sel.hasClass("local")) {
             sel.find(".timestamp").remove();
-            sel.append('<div class= "chatmessage-wrapper" >\
-                                        <div class="chatmessage ">\
-                                            <div class="replywrapper">\
-                                                <div class="messagecontent">\
-                                                    <div class="usermessage">' + sms + '</div>\
-                                                </div>\
-                                            </div>\
-                                        </div>\
-                                        <div class="timestamp">' + time + '</div>\
-                                    </div >');
+            sel.append("<div class= \"chatmessage-wrapper\" >                            <div class=\"chatmessage " + privateClass + "\">                                <div class=\"replywrapper\">                                    <div class=\"messagecontent\">                                        <div class=\"usermessage\"> " + msg + " </div>                                        " + privateDetail + "\n                                    </div>                                </div>                            </div>                            <div class=\"timestamp\"> " + time + " </div>                        </div >");
         }
         else {
-            $("#chatconversation").append('<div class="chat-message-group local"> \
-                                                <div class= "chatmessage-wrapper" >\
-                                                        <div class="chatmessage ">\
-                                                            <div class="replywrapper">\
-                                                                <div class="messagecontent">\
-                                                                    <div class="usermessage">' + sms + '</div>\
-                                                                </div>\
-                                                            </div>\
-                                                        </div>\
-                                                        <div class="timestamp">' + time + '</div>\
-                                                    </div >\
-                                                </div>');
+            $("#chatconversation").append("<div class=\"chat-message-group local\">                     <div class= \"chatmessage-wrapper\" >                        <div class=\"chatmessage " + privateClass + "\">                            <div class=\"replywrapper\">                                <div class=\"messagecontent\">                                    <div class=\"usermessage\"> " + msg + " </div>                                    " + privateDetail + "\n                                </div>                            </div>                        </div>                        <div class=\"timestamp\"> " + time + " </div>                    </div >                </div>");
         }
         this.scrollToBottom();
-        this.props.sendChat(sms);
+        if (this.isPrivate) {
+            this.props.sendPrivateChat(this.privateSenderId, msg);
+        }
+        else {
+            this.props.sendChat(msg);
+        }
     };
     //chat
-    ChattingPanel.prototype.receiveMessage = function (username, message, timestamp) {
+    ChattingPanel.prototype.receiveMessage = function (id, username, message, isPrivate) {
+        if (isPrivate === void 0) { isPrivate = false; }
         //update unread count
         if (!this.opened) {
             this.unreadCount++;
@@ -151,7 +156,12 @@ var ChattingPanel = /** @class */ (function () {
         //update ui
         var emoMessage = this.emonameToEmoicon(message);
         var nameColor = this.getNameColor(username);
-        $("#chatconversation").append("<div class=\"chat-message-group remote\">         <div class= \"chatmessage-wrapper\" >                <div class=\"chatmessage \">                    <div class=\"replywrapper\">                        <div class=\"messagecontent\">                            <div class=\"display-name\" style=\"color:" + nameColor + "\">" + username + '</div>\
+        var privateClass = isPrivate ? "private" : "";
+        var replyElem = "";
+        if (isPrivate) {
+            replyElem = "\n                <span class=\"jitsi-icon\" jitsi-id=\"" + id + "\" jitsi-name=\"" + username + "\">\n                    <svg height=\"22\" width=\"22\" viewBox=\"0 0 36 36\">\n                        <path d=\"M30,29a1,1,0,0,1-.81-.41l-2.12-2.92A18.66,18.66,0,0,0,15,18.25V22a1,1,0,0,1-1.6.8l-12-9a1,1,0,0,1,0-1.6l12-9A1,1,0,0,1,15,4V8.24A19,19,0,0,1,31,27v1a1,1,0,0,1-.69.95A1.12,1.12,0,0,1,30,29ZM14,16.11h.1A20.68,20.68,0,0,1,28.69,24.5l.16.21a17,17,0,0,0-15-14.6,1,1,0,0,1-.89-1V6L3.67,13,13,20V17.11a1,1,0,0,1,.33-.74A1,1,0,0,1,14,16.11Z\"></path>\n                    </svg>\n                </span>";
+        }
+        var $chatitem = $("<div class=\"chat-message-group remote\">         <div class= \"chatmessage-wrapper\" >                <div class=\"chatmessage " + privateClass + "\">                    <div class=\"replywrapper\">                        <div class=\"messagecontent\">                            <div class=\"display-name\" style=\"color:" + nameColor + "\">" + username + replyElem + '</div>\
                             <div class="usermessage">' + emoMessage + '</div>\
                         </div>\
                     </div>\
@@ -159,7 +169,18 @@ var ChattingPanel = /** @class */ (function () {
                 <div class="timestamp">' + this.getCurTime() + '</div>\
             </div >\
         </div>');
+        $("#chatconversation").append($chatitem);
+        if (isPrivate) {
+            var _this_2 = this;
+            $chatitem.find(".jitsi-icon").click(function (e) {
+                var id = $(this).attr("jitsi-id");
+                var name = $(this).attr("jitsi-name");
+                _this_2.setPrivateState(id, name);
+            });
+        }
         this.scrollToBottom();
+        if (isPrivate)
+            this.setPrivateState(id, username);
     };
     ChattingPanel.prototype.scrollToBottom = function () {
         var overheight = 0;
@@ -256,6 +277,18 @@ var ChattingPanel = /** @class */ (function () {
         this.remainColors.splice(randIndex, 1);
         this.nameColorMap.set(name, randomColor);
         return randomColor;
+    };
+    ChattingPanel.prototype.setPrivateState = function (jitsiId, name) {
+        this.isPrivate = true;
+        this.privateSenderId = jitsiId;
+        this.privateSenderName = name;
+        this.privatePanel.style.display = "flex";
+        this.privateLabelElement.innerHTML = "Private message to " + name;
+    };
+    ChattingPanel.prototype.clearPrivateState = function () {
+        this.isPrivate = false;
+        this.privateSenderId = null;
+        this.privatePanel.style.display = "none";
     };
     return ChattingPanel;
 }());

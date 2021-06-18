@@ -28,17 +28,20 @@ import { JitsiTrack } from "./jitsi/JitsiTrack";
 import { SettingDialog, SettingDialogProps } from "./components/SettingDialog";
 import { ChattingPanel, ChattingPanelProps } from "./components/ChattingPanel";
 import { ParticipantListPanel, ParticipantListPanelProps } from "./components/ParticipantListPanel";
+import { NotificationType } from "./enum/NotificationType";
+import { avatarName } from "./util/snippet";
+import { AskDialog, AskDialogProps } from "./components/AskDialog";
 
 
 
 declare global {
     interface Window { _roomId: number; meetingController: any }
+    interface JQueryStatic { toast: Function; }
 }
 
-enum PanelVideoState { NoCamera = "no-camera", ScreenShare="screen", Camera="camera", VideoStreaming= "stream"}
+enum PanelVideoState { NoCamera = "no-camera", ScreenShare = "screen", Camera = "camera", VideoStreaming = "stream" }
 
-export class MeetingUI
-{   
+export class MeetingUI {
     MAX_PANELS: number = 9;
     nPanelCount: number = 0;
 
@@ -58,6 +61,7 @@ export class MeetingUI
     userNameClass: string = "displayname";
     activeSpeakerClass: string = "active-speaker";
     fullscreenClass: string = "video-fullscreen";
+    privateChatClass: string = "private-chat";
 
     toolbarAudioButtonElement: HTMLElement;
     toolbarVideoButtonElement: HTMLElement;
@@ -107,6 +111,7 @@ export class MeetingUI
         props.unreadBadgeElement = document.querySelector(".chat-badge");
         props.openCallback = this.refreshCardViews.bind(this);
         props.sendChat = this.meeting.sendChatMessage.bind(this.meeting);
+        props.sendPrivateChat = this.meeting.sendPrivateChatMessage.bind(this.meeting);
         this.chattingPanel.init(props);
 
         this.participantsListPanel = new ParticipantListPanel();
@@ -116,8 +121,7 @@ export class MeetingUI
         this.participantsListPanel.init(lProps);
     }
 
-    private registerEventHandlers()
-    {
+    private registerEventHandlers() {
         $(window).resize(() => {
             this.refreshCardViews();
         });
@@ -194,48 +198,55 @@ export class MeetingUI
             $(this.toolbarSettingButtonElement).on('click', () => {
                 this.showSettingDialog();
             });
-        });        
+
+            document.addEventListener('click', (e) => {
+                let inside = $(e.target).closest(`.${this.popupMenuClass}`).length > 0;
+                if (!inside) {
+                    $(`.${this.popupMenuClass}`).removeClass("visible");
+                }
+            });
+        });
     }
 
+    updateByRole(isHost: boolean) {
+        const isWebinar = this.meeting.roomInfo.IsWebinar;
+        if (isWebinar && !isHost)
+            this.showParticipantListButton(false);
+        else
+            this.showParticipantListButton(true);
+
+        this.participantsListPanel.updateByRole(isHost);
+    }
+
+
     private registerPanelEventHandler(panel: HTMLElement) {
-        const popupMenuClass = this.popupMenuClass;
-        const popupMenuButtonClass = this.popupMenuButtonClass;
-        const panelContainerElement = this.panelContainerElement;
         const _this = this;
 
         $(panel)
-            .on('click', `.${popupMenuButtonClass}`,
+            .on('click', `.${_this.popupMenuButtonClass}`,
                 function (e) {
-                    $(panelContainerElement).find(`.${popupMenuClass}`).removeClass("visible");
-                    $(this).find(`.${popupMenuClass}`).toggleClass("visible");
+                    $(`.${_this.popupMenuClass}`).removeClass("visible");
+                    $(this).find(`.${_this.popupMenuClass}`).addClass("visible").focus();
                     e.stopPropagation();
                 }
             )
-            .on('click', '.grant-moderator',
+            .on('click', 'li.overflow-menu-item',
                 function (e) {
-                    $(this).closest(`.${popupMenuClass}`).removeClass("visible");
-                    e.stopPropagation();
-                }
-            )
-            .on('click', '.audio-mute',
-                function (e) {
-                    $(this).closest(`.${popupMenuClass}`).removeClass("visible");
-                    e.stopPropagation();
-                }
-            )
-            .on('click', '.video-mute',
-                function (e) {
-                    $(this).closest(`.${popupMenuClass}`).removeClass("visible");
+                    $(this).closest(`.${_this.popupMenuClass}`).removeClass("visible");
                     e.stopPropagation();
                 }
             )
             .on('click', '.fullscreen',
                 function (e) {
-                    $(this).closest(`.${popupMenuClass}`).removeClass("visible");
-                    e.stopPropagation();
-
-                    $(panel).toggleClass("video-fullscreen");
+                    $(panel).toggleClass(_this.fullscreenClass);
                     _this.refreshCardViews();
+
+                    const label = $(this).find(".label");
+                    if ($(panel).hasClass(_this.fullscreenClass)) {
+                        label.html("Exit full screen");
+                    } else {
+                        label.html("View full screen");
+                    }
                 }
             )
             .on('mouseover', function () {
@@ -247,12 +258,9 @@ export class MeetingUI
                 $(this).addClass("display-video");
             })
             .on('dblclick', function (e) {
-                $(this).closest(`.${popupMenuClass}`).removeClass("visible");
-                e.stopPropagation();
-
-                $(panel).toggleClass("video-fullscreen");
-                _this.refreshCardViews();
-            });
+                $(this).find(".fullscreen").trigger("click");
+            })
+            ;
     }
 
     private _getPanelFromVideoElement(videoElem: HTMLMediaElement): HTMLElement {
@@ -311,7 +319,7 @@ export class MeetingUI
 
         const videoElem = this._getVideoElementFromPanel(panel);
         const audioElem = this._getAudioElementFromPanel(panel);
-        return {videoElem, audioElem};
+        return { videoElem, audioElem };
     }
 
     public freeVideoPanel(videoElement: HTMLMediaElement) {
@@ -411,19 +419,25 @@ export class MeetingUI
             });
         }
 
+        //private chat handler
+        $(panel).find(`.${this.privateChatClass}`).click(_ => {
+            this.chattingPanel.open(true);
+            this.chattingPanel.setPrivateState(user.getId(), user.getDisplayName());
+        });
+
         //active speaker(blue border)
         $(panel).removeClass(this.activeSpeakerClass);
-        
+
     }
 
     public updatePanelOnMyBGUser(videoElem: HTMLMediaElement, myInfo: UserInfo, localTracks: JitsiTrack[]) {
         const panel = this._getPanelFromVideoElement(videoElem);
         if (!panel) return;
 
-        let audioMuted = false, videoMuted = false;
+        let audioMuted = true, videoMuted = true;
         localTracks.forEach(track => {
-            if (track.getType() === MediaType.VIDEO && track.isMuted()) videoMuted = true;
-            else if (track.getType() === MediaType.AUDIO && track.isMuted()) audioMuted = true;
+            if (track.getType() === MediaType.VIDEO && !track.isMuted()) videoMuted = false;
+            else if (track.getType() === MediaType.AUDIO && !track.isMuted()) audioMuted = false;
         });
 
         //name
@@ -436,26 +450,31 @@ export class MeetingUI
         });
         this.setShotnameVisible(!isVisibleVideo, videoElem);
 
+        //bottom small icons
+        this._getVideoMuteElementFromPanel(panel).style.display = videoMuted ? "block" : "none";
+        this._getAudioMuteElementFromPanel(panel).style.display = audioMuted ? "block" : "none";
+        this._getModeratorStarElementFromPanel(panel).style.display = myInfo.IsHost ? "block" : "none";
+
         //popup menu
         const audioMutePopupMenu = this._getPopupMenuAudioMuteFromPanel(panel);
         const videoMutePopupMenu = this._getPopupMenuVideoMuteFromPanel(panel);
         const grantModeratorPopupMenu = this._getPopupMenuGrantModeratorFromPanel(panel);
 
         if (myInfo.IsHost) {
-            videoMutePopupMenu.style.display = myInfo.useMedia.useCamera ? "flex" : "none";
-            audioMutePopupMenu.style.display = myInfo.useMedia.useMic ? "flex" : "none";
+            videoMutePopupMenu.style.display = myInfo.mediaPolicy.useCamera ? "flex" : "none";
+            audioMutePopupMenu.style.display = myInfo.mediaPolicy.useMic ? "flex" : "none";
             grantModeratorPopupMenu.style.display = "flex";
         } else {
             videoMutePopupMenu.style.display = "none";
             audioMutePopupMenu.style.display = "none";
             grantModeratorPopupMenu.style.display = "none";
         }
-        
+
         grantModeratorPopupMenu.style.display = "none";
 
         //popup menu audio icon/label change
         if (audioMutePopupMenu.style.display === 'flex') {
-            if (myInfo.mediaMute.audioMute) {
+            if (audioMuted) {
                 $(audioMutePopupMenu).find(".label").html("Unmute Audio");
                 $(audioMutePopupMenu).find("path").attr("d", VectorIcon.AUDIO_MUTE_ICON);
             }
@@ -466,7 +485,7 @@ export class MeetingUI
         }
 
         if (videoMutePopupMenu.style.display === 'flex') {
-            if (myInfo.mediaMute.videoMute) {
+            if (videoMuted) {
                 $(videoMutePopupMenu).find(".label").html("Unmute Video");
                 $(videoMutePopupMenu).find("path").attr("d", VectorIcon.VIDEO_MUTE_ICON);
             }
@@ -486,10 +505,8 @@ export class MeetingUI
             });
         }
 
-        //bottom small icons
-        this._getVideoMuteElementFromPanel(panel).style.display = videoMuted ? "block" : "none";
-        this._getAudioMuteElementFromPanel(panel).style.display = audioMuted ? "block" : "none";
-        this._getModeratorStarElementFromPanel(panel).style.display = myInfo.IsHost ? "block" : "none";
+        //hide private-chat item
+        $(panel).find(`.${this.privateChatClass}`).hide();
 
         //active speaker(blue border)
         $(panel).addClass(this.activeSpeakerClass);
@@ -509,7 +526,7 @@ export class MeetingUI
 
         //shortname
         const shortNamePanel = this._getShortNameElementFromPanel(panel);
-        $("text", shortNamePanel).html(this.getShortName(name));
+        $("text", shortNamePanel).html(avatarName(name));
     }
 
     public updateToolbar(myInfo: UserInfo, localTracks: JitsiTrack[]) {
@@ -530,7 +547,7 @@ export class MeetingUI
         this.toolbarVideoButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
         this.toolbarDesktopShareButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
         this.toolbarAudioButtonElement.style.display = hasAudioTrack ? "inline-block" : "none";
-        
+
         if (audioMuted) {
             $(this.toolbarAudioButtonElement).find("path").attr("d", VectorIcon.AUDIO_MUTE_ICON);
             $(this.toolbarAudioButtonElement).addClass("muted");
@@ -546,8 +563,6 @@ export class MeetingUI
             $(this.toolbarVideoButtonElement).find("path").attr("d", VectorIcon.VIDEO_UNMUTE_ICON);
             $(this.toolbarVideoButtonElement).removeClass("muted");
         }
-
-        this.userListToggleButtonElement.style.visibility = (myInfo.IsHost) ? "visible" : "hidden";
     }
 
     public setScreenShare(on: boolean) {
@@ -568,12 +583,6 @@ export class MeetingUI
         }
     }
 
-    private getShortName(fullName: string) {
-        if (!fullName || fullName.length <= 1)
-            return "";
-        else return fullName.toUpperCase().substr(0, 2);
-    }
-
     public showModeratorIcon(panel: HTMLElement, show: boolean) {
         this._getModeratorStarElementFromPanel(panel).style.display = show ? "block" : "none";
     }
@@ -586,7 +595,7 @@ export class MeetingUI
         const videoState = panel.getAttribute("video-state");
         return videoState as PanelVideoState;
     }
-    
+
     private refreshCardViews() {
         //margin
         const gutter = 40;
@@ -642,13 +651,12 @@ export class MeetingUI
             else columnCount = 4;
         }
 
-        rowCount = Math.floor((panelCount  - 1 ) / columnCount) + 1;
+        rowCount = Math.floor((panelCount - 1) / columnCount) + 1;
         if (width < 576) {
             w = width;
             h = w * 9 / 16;
         }
-        else
-        {
+        else {
             // 
             if (width * rowCount * 9 > height * columnCount * 16) {
                 h = height / rowCount;
@@ -703,10 +711,10 @@ export class MeetingUI
                                 </span> \
                             </div> \
                         </div>';
-            
+
         }
 
-        const  micStatus = '<div class="indicator-container audioMuted"> \
+        const micStatus = '<div class="indicator-container audioMuted"> \
                             <div> \
                                 <span class="indicator-icon-container  toolbar-icon" id=""> \
                                     <div class="jitsi-icon "> \
@@ -758,7 +766,7 @@ export class MeetingUI
                         </div>
                     </span>
                 </div>
-                <div class="${this.popupMenuClass}" style="position: relative; right: 168px;  top: 25px; width: 175px;">
+                <div class="${this.popupMenuClass}" tabIndex=-1 style="position: relative; right: 168px;  top: 25px; width: 175px;">
                     <ul aria-label="More actions menu" class="overflow-menu">
                         <li aria-label="Grant Moderator" class="overflow-menu-item grant-moderator" tabindex="0" role="button">
                             <span class="overflow-menu-item-icon">
@@ -800,6 +808,16 @@ export class MeetingUI
                             </span>
                             <span class="label overflow-menu-item-text">View full screen</span>
                         </li>
+                        <li aria-label="Private Chat" class="overflow-menu-item private-chat">
+                            <span class="overflow-menu-item-icon">
+                                <div class="jitsi-icon ">
+                                    <svg fill="none" height="22" width="22" viewBox="0 0 22 22">
+                                        <path clip-rule="evenodd" d="M19,8H18V5a3,3,0,0,0-3-3H5A3,3,0,0,0,2,5V17a1,1,0,0,0,.62.92A.84.84,0,0,0,3,18a1,1,0,0,0,.71-.29l2.81-2.82H8v1.44a3,3,0,0,0,3,3h6.92l2.37,2.38A1,1,0,0,0,21,22a.84.84,0,0,0,.38-.08A1,1,0,0,0,22,21V11A3,3,0,0,0,19,8ZM8,11v1.89H6.11a1,1,0,0,0-.71.29L4,14.59V5A1,1,0,0,1,5,4H15a1,1,0,0,1,1,1V8H11A3,3,0,0,0,8,11Zm12,7.59-1-1a1,1,0,0,0-.71-.3H11a1,1,0,0,1-1-1V11a1,1,0,0,1,1-1h8a1,1,0,0,1,1,1Z"></path> \
+                                    </svg>
+                                </div>
+                            </span>
+                            <span class="label overflow-menu-item-text">Private chat</span>
+                        </li>
                     </ul>
                 </div>
             </span>
@@ -810,23 +828,6 @@ export class MeetingUI
         this.refreshCardViews();
 
         return panel[0];
-    }
-
-    public Log(message: string) {
-        if ($("#logPanel").length <= 0) {
-            const logPanel = `<div id="logPanel" style="position: fixed;width: 300px;height: 200px;background: black;bottom:0px;right: 0px;
-                                z-index: 100000;border-left: 1px dashed rebeccapurple;border-top: 1px dashed rebeccapurple;overflow-y:auto;"></div>`;
-            $("body").append(logPanel);
-        }
-        const colors = ['blanchedalmond', 'hotpink', 'chartreuse', 'coral', 'gold', 'greenyellow', 'violet', 'wheat'];
-        const color = colors[Math.floor(Math.random() * 100) % colors.length];
-        const messageItm = `<div style="color:${color};"><span>${message}</span></div>`;
-        $("#logPanel").append(messageItm);
-        
-        $('#logPanel').scroll();
-        $("#logPanel").animate({
-            scrollTop: 20000
-        }, 200);
     }
 
     public updateTime(timeLabel: string) {
@@ -857,10 +858,6 @@ export class MeetingUI
         settingDialog.show();
     }
 
-    public onChatMessage(name: string, msg: string, timestamp: string) {
-        this.chattingPanel.receiveMessage(name, msg, timestamp);
-    }
-
     //add, remove participant to and from list
     public addParticipant(jitsiId: string, name: string, me: boolean, useCamera: boolean, useMic: boolean) {
         this.participantsListPanel.addParticipant(jitsiId, name, me, useCamera, useMic);
@@ -872,6 +869,69 @@ export class MeetingUI
 
     public showParticipantListButton(show: boolean) {
         $("#open-participants-toggle").css("visibility", show ? "visible" : "hidden");
+    }
+
+
+
+    public Log(message: string) {
+        if ($("#logPanel").length <= 0) {
+            const logPanel = `<div id="logPanel" style="position: fixed;width: 300px;height: 200px;background: black;top:0px;left: 0px;
+                                z-index: 100000;border-right: 1px dashed rebeccapurple;border-bottom: 1px dashed rebeccapurple;overflow-y:auto;"></div>`;
+            $("body").append(logPanel);
+        }
+        const colors = ['blanchedalmond', 'hotpink', 'chartreuse', 'coral', 'gold', 'greenyellow', 'violet', 'wheat'];
+        const color = colors[Math.floor(Math.random() * 100) % colors.length];
+        const messageItm = `<div style="color:${color};"><span>${message}</span></div>`;
+        $("#logPanel").append(messageItm);
+
+        $('#logPanel').scroll();
+        $("#logPanel").animate({
+            scrollTop: 20000
+        }, 200);
+    }
+
+    public askDialog(title: string, message: string, icon: NotificationType,
+        allowCallback: Function, denyCallback: Function, param: any) {
+        const props = new AskDialogProps();
+        props.title = title;
+        props.message = message;
+        props.icon = icon;
+        props.isWarning = true;
+        props.allowCallback = allowCallback;
+        props.denyCallback = denyCallback;
+        props.param = param;
+        const dlg = new AskDialog(props);
+        dlg.show();
+    }
+
+    public notification(title: string, message: string, icon: NotificationType) {
+        if (!icon)
+            icon = NotificationType.Info;
+        $.toast({
+            heading: title,
+            text: message,
+            showHideTransition: 'slide',
+            hideAfter: false,//7000
+            bgColor: "#164157",
+            icon: icon,
+            stack: 5,
+            loader: false,
+        });
+    }
+
+    public notification_warning(title: string, message: string, icon: NotificationType) {
+        if (!icon)
+            icon = NotificationType.Warning;
+        $.toast({
+            heading: title,
+            text: message,
+            showHideTransition: 'slide',
+            hideAfter: 7000,
+            bgColor: "#800000",
+            icon: icon,
+            stack: 5,
+            loader: false
+        });
     }
 }
 

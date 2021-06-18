@@ -4,6 +4,7 @@ exports.Lobby = void 0;
 var MediaType_1 = require("./enum/MediaType");
 var snippet_1 = require("./util/snippet");
 var ParticipantType_1 = require("./enum/ParticipantType");
+var MeetingType_1 = require("./enum/MeetingType");
 var LobbySeetings = /** @class */ (function () {
     function LobbySeetings() {
     }
@@ -19,6 +20,8 @@ var Lobby = /** @class */ (function () {
         this.activeSpeakerDeviceId = null;
         this.conferenceId = window.conferenceId;
         this.userId = window.userId;
+        this.localVideoTrack = null;
+        this.localAudioTrack = null;
         this.videoPreviewElem = document.getElementById("camera-preview");
         this.audioPreviewElem = document.getElementById("mic-preview");
         this.cameraListElem = document.getElementById("camera-list");
@@ -30,34 +33,36 @@ var Lobby = /** @class */ (function () {
         this.startSessionButton = document.getElementById("start-session");
     }
     Lobby.prototype.start = function () {
-        var _this = this;
+        var _this_1 = this;
         var initOptions = {
             disableAudioLevels: true
         };
         this.JitsiMeetJS.init(initOptions);
         $(document).ready(function () {
-            _this.resizeCameraView();
-            _this.attachEventHandlers();
-            _this.refreshDeviceList();
-            $(_this.startSessionButton).prop('disabled', true);
-            _this.videoMuteElem.checked = true;
-            _this.audioMuteElem.checked = true;
+            _this_1.resizeCameraView();
+            _this_1.attachEventHandlers();
+            _this_1.refreshDeviceList();
+            $(_this_1.startSessionButton).prop('disabled', true);
+            _this_1.videoMuteElem.checked = false;
+            _this_1.audioMuteElem.checked = false;
+            _this_1.videoMuteElem.disabled = true;
+            _this_1.audioMuteElem.disabled = true;
             $.ajax({
-                url: "/api/Meeting/" + _this.conferenceId,
+                url: "/api/Meeting/" + _this_1.conferenceId,
                 type: "GET",
                 data: "",
                 dataType: 'json',
                 success: function (res) {
-                    _this.onMeetingResult(res);
+                    _this_1.onMeetingResult(res);
                 },
                 error: function (xhr, status, error) {
-                    _this.onMeetingErrorResult(error);
+                    _this_1.onMeetingErrorResult(error);
                 }
             });
         });
     };
     Lobby.prototype.attachEventHandlers = function () {
-        var _this = this;
+        var _this_1 = this;
         var _this = this;
         $(this.cameraListElem).on('change', function () {
             _this.onCameraChanged($(this).val());
@@ -69,49 +74,84 @@ var Lobby = /** @class */ (function () {
             _this.onSpeakerChanged($(this).val());
         });
         $(this.startSessionButton).on('click', function () {
-            _this.startSession();
+            _this_1.startSession();
         });
         $(window).resize(function () {
-            _this.resizeCameraView();
+            _this_1.resizeCameraView();
+        });
+        $(this.videoMuteElem).on('change', function () {
+            _this.onEnableVideo(this.checked);
+        });
+        $(this.audioMuteElem).on('change', function () {
+            _this.onEnableAudio(this.checked);
         });
     };
     Lobby.prototype.refreshDeviceList = function () {
-        var _this = this;
+        var _this_1 = this;
         this.JitsiMeetJS.mediaDevices.enumerateDevices(function (devices) {
-            _this.cameraList = devices.filter(function (d) { return d.kind === 'videoinput'; });
-            _this.micList = devices.filter(function (d) { return d.kind === 'audioinput'; });
-            _this.speakerList = devices.filter(function (d) { return d.kind === 'audiooutput'; });
-            _this.renderDevices();
+            _this_1.cameraList = devices.filter(function (d) { return d.kind === 'videoinput'; });
+            _this_1.micList = devices.filter(function (d) { return d.kind === 'audioinput'; });
+            _this_1.speakerList = devices.filter(function (d) { return d.kind === 'audiooutput'; });
+            _this_1.renderDevices();
         });
     };
     Lobby.prototype.renderDevices = function () {
-        var _this = this;
+        var _this_1 = this;
         this.clearDOMElement(this.cameraListElem);
         this.cameraList.forEach(function (camera) {
-            $(_this.cameraListElem).append("<option value=\"" + camera.deviceId + "\">" + camera.label + "</option>");
+            $(_this_1.cameraListElem).append("<option value=\"" + camera.deviceId + "\">" + camera.label + "</option>");
         });
         this.clearDOMElement(this.micListElem);
         this.micList.forEach(function (mic) {
-            $(_this.micListElem).append("<option value=\"" + mic.deviceId + "\">" + mic.label + "</option>");
+            $(_this_1.micListElem).append("<option value=\"" + mic.deviceId + "\">" + mic.label + "</option>");
         });
         this.clearDOMElement(this.speakerListElem);
         this.speakerList.forEach(function (speaker) {
-            $(_this.speakerListElem).append("<option value=\"" + speaker.deviceId + "\">" + speaker.label + "</option>");
+            $(_this_1.speakerListElem).append("<option value=\"" + speaker.deviceId + "\">" + speaker.label + "</option>");
         });
         this.activeCameraDeviceId = this.cameraList.length > 0 ? this.cameraList[0].deviceId : null;
         this.activeMicDeviceId = this.micList.length > 0 ? this.micList[0].deviceId : null;
         this.activeSpeakerDeviceId = this.speakerList.length > 0 ? this.speakerList[0].deviceId : null;
         this.createLocalTracks(this.activeCameraDeviceId, this.activeMicDeviceId)
             .then(function (tracks) {
-            tracks.forEach(function (t) {
-                if (t.getType() === MediaType_1.MediaType.VIDEO) {
-                    t.attach(_this.videoPreviewElem);
-                }
-                else if (t.getType() === MediaType_1.MediaType.AUDIO) {
-                    t.attach(_this.audioPreviewElem);
-                }
-            });
+            _this_1.initOnTracks(tracks);
         });
+    };
+    Lobby.prototype.initOnTracks = function (tracks) {
+        var _this_1 = this;
+        tracks.forEach(function (t) {
+            if (t.getType() === MediaType_1.MediaType.VIDEO) {
+                _this_1.localVideoTrack = t;
+                t.attach(_this_1.videoPreviewElem);
+                _this_1.showCamera(true);
+            }
+            else if (t.getType() === MediaType_1.MediaType.AUDIO) {
+                _this_1.localAudioTrack = t;
+                t.attach(_this_1.audioPreviewElem);
+            }
+        });
+        if (this.activeCameraDeviceId === null) {
+            this.showCamera(false);
+            this.videoMuteElem.disabled = true;
+            this.videoMuteElem.checked = false;
+            this.cameraListElem.disabled = true;
+        }
+        else {
+            this.showCamera(true);
+            this.videoMuteElem.disabled = false;
+            this.videoMuteElem.checked = true;
+            this.cameraListElem.disabled = false;
+        }
+        if (this.activeMicDeviceId === null) {
+            this.audioMuteElem.disabled = true;
+            this.audioMuteElem.checked = false;
+            this.micListElem.disabled = true;
+        }
+        else {
+            this.audioMuteElem.disabled = false;
+            this.audioMuteElem.checked = true;
+            this.micListElem.disabled = false;
+        }
     };
     Lobby.prototype.clearDOMElement = function (elem) {
         while (elem.firstChild) {
@@ -119,7 +159,7 @@ var Lobby = /** @class */ (function () {
         }
     };
     Lobby.prototype.createLocalTracks = function (cameraDeviceId, micDeviceId) {
-        var _this = this;
+        var _this_1 = this;
         this.videoTrackError = null;
         this.audioTrackError = null;
         if (cameraDeviceId != null && micDeviceId != null) {
@@ -128,19 +168,19 @@ var Lobby = /** @class */ (function () {
                 cameraDeviceId: cameraDeviceId,
                 micDeviceId: micDeviceId
             }).catch(function () { return Promise.all([
-                _this.createAudioTrack(micDeviceId).then(function (_a) {
+                _this_1.createAudioTrack(micDeviceId).then(function (_a) {
                     var stream = _a[0];
                     return stream;
                 }),
-                _this.createVideoTrack(cameraDeviceId).then(function (_a) {
+                _this_1.createVideoTrack(cameraDeviceId).then(function (_a) {
                     var stream = _a[0];
                     return stream;
                 })
             ]); }).then(function (tracks) {
-                if (_this.audioTrackError) {
+                if (_this_1.audioTrackError) {
                     //display error
                 }
-                if (_this.videoTrackError) {
+                if (_this_1.videoTrackError) {
                     //display error
                 }
                 return tracks.filter(function (t) { return typeof t !== 'undefined'; });
@@ -155,52 +195,69 @@ var Lobby = /** @class */ (function () {
         return Promise.resolve([]);
     };
     Lobby.prototype.createVideoTrack = function (cameraDeviceId) {
-        var _this = this;
+        var _this_1 = this;
         return this.JitsiMeetJS.createLocalTracks({
             devices: ['video'],
             cameraDeviceId: cameraDeviceId,
             micDeviceId: null
         })
             .catch(function (error) {
-            _this.videoTrackError = error;
+            _this_1.videoTrackError = error;
             return Promise.resolve([]);
         });
     };
     Lobby.prototype.createAudioTrack = function (micDeviceId) {
-        var _this = this;
+        var _this_1 = this;
         return (this.JitsiMeetJS.createLocalTracks({
             devices: ['audio'],
             cameraDeviceId: null,
             micDeviceId: micDeviceId
         })
             .catch(function (error) {
-            _this.audioTrackError = error;
+            _this_1.audioTrackError = error;
             return Promise.resolve([]);
         }));
     };
     Lobby.prototype.onCameraChanged = function (cameraDeviceId) {
-        var _this = this;
+        var _this_1 = this;
         this.activeCameraDeviceId = cameraDeviceId;
+        this.removeVideoTrack();
         this.createLocalTracks(this.activeCameraDeviceId, null)
             .then(function (tracks) {
             tracks.forEach(function (t) {
                 if (t.getType() === MediaType_1.MediaType.VIDEO) {
-                    t.attach(_this.videoPreviewElem);
+                    _this_1.localVideoTrack = t;
+                    t.attach(_this_1.videoPreviewElem);
+                    _this_1.showCamera(true);
                 }
             });
         });
     };
     Lobby.prototype.onMicChanged = function (micDeviceId) {
-        var _this = this;
+        var _this_1 = this;
         this.activeMicDeviceId = micDeviceId;
+        this.removeAudioTrack();
         this.createLocalTracks(null, this.activeMicDeviceId)
             .then(function (tracks) {
             tracks.forEach(function (t) {
                 if (t.getType() === MediaType_1.MediaType.AUDIO) {
-                    t.attach(_this.audioPreviewElem);
+                    _this_1.localAudioTrack = t;
+                    t.attach(_this_1.audioPreviewElem);
                 }
             });
         });
+    };
+    Lobby.prototype.removeVideoTrack = function () {
+        if (this.localVideoTrack) {
+            this.localVideoTrack.dispose();
+            this.localVideoTrack = null;
+        }
+    };
+    Lobby.prototype.removeAudioTrack = function () {
+        if (this.localAudioTrack) {
+            this.localAudioTrack.dispose();
+            this.localAudioTrack = null;
+        }
     };
     Lobby.prototype.onSpeakerChanged = function (speakerDeviceId) {
         this.activeSpeakerDeviceId = speakerDeviceId;
@@ -209,11 +266,43 @@ var Lobby = /** @class */ (function () {
         }
         ;
     };
+    Lobby.prototype.onEnableVideo = function (enable) {
+        if (enable) {
+            this.onCameraChanged(this.activeCameraDeviceId);
+            this.cameraListElem.disabled = false;
+        }
+        else {
+            this.removeVideoTrack();
+            this.showCamera(false);
+            this.cameraListElem.disabled = true;
+        }
+    };
+    Lobby.prototype.onEnableAudio = function (enable) {
+        if (enable) {
+            this.onMicChanged(this.activeMicDeviceId);
+            this.micListElem.disabled = false;
+        }
+        else {
+            this.removeAudioTrack();
+            this.micListElem.disabled = true;
+        }
+    };
+    Lobby.prototype.showCamera = function (show) {
+        if (show) {
+            $(this.videoPreviewElem).removeClass("d-none");
+            $("#no-camera-icon").addClass("d-none");
+        }
+        else {
+            $(this.videoPreviewElem).addClass("d-none");
+            $("#no-camera-icon").removeClass("d-none");
+        }
+    };
     Lobby.prototype.resizeCameraView = function () {
-        var w = $("#camera-preview").width();
+        var $container = $("#camera-preview-container");
+        var w = $container.width();
         var h = w * 9 / 16;
-        $("#camera-preview").css("height", h);
-        $("#camera-preview").css("min-height", h);
+        $container.css("height", h);
+        $container.css("min-height", h);
     };
     Lobby.prototype.startSession = function () {
         if (this.isAnonymousUser() && this.anonymousNameFiled.value.trim().length <= 0)
@@ -226,8 +315,22 @@ var Lobby = /** @class */ (function () {
         $("[name=audioMute]").val(this.audioMuteElem.checked + "");
         $("form").submit();
     };
+    Lobby.prototype.validateUser = function (meeting) {
+        var _this_1 = this;
+        if (this.isAnonymousUser()) {
+            return meeting.ConferenceType === MeetingType_1.MeetingType.Open;
+        }
+        else {
+            var user = meeting.Participants.filter(function (p) { return p.ParticipantId.toString() === _this_1.userId; });
+            return user.length > 0;
+        }
+    };
     Lobby.prototype.onMeetingResult = function (meeting) {
-        var _this = this;
+        var _this_1 = this;
+        if (!this.validateUser(meeting)) {
+            location.href = "/noaccess";
+            return;
+        }
         var hosts = meeting.Participants.filter(function (p) { return p.ParticipantType === ParticipantType_1.ParticipantType.Host; });
         if (hosts.length === 1)
             this.setOrganizerName(hosts[0].ParticipantName);
@@ -239,11 +342,11 @@ var Lobby = /** @class */ (function () {
                 .show()
                 .focus()
                 .keyup(function (_) {
-                $(_this.startSessionButton).prop('disabled', _this.anonymousNameFiled.value.trim().length <= 0);
+                $(_this_1.startSessionButton).prop('disabled', _this_1.anonymousNameFiled.value.trim().length <= 0);
             }).keypress(function (e) {
                 if ((e.keyCode || e.which) == 13) { //Enter keycode
                     e.preventDefault();
-                    _this.startSession();
+                    _this_1.startSession();
                 }
             });
         }

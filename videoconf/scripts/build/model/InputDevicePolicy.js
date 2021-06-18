@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InputDeviceUsePolicy = void 0;
-var InputDeviceUsePolicy = /** @class */ (function () {
-    function InputDeviceUsePolicy() {
+exports.InputMediaPolicy = void 0;
+var InputMediaPolicy = /** @class */ (function () {
+    function InputMediaPolicy() {
     }
-    return InputDeviceUsePolicy;
+    return InputMediaPolicy;
 }());
-exports.InputDeviceUsePolicy = InputDeviceUsePolicy;
+exports.InputMediaPolicy = InputMediaPolicy;
 //# sourceMappingURL=InputDevicePolicy.js.map

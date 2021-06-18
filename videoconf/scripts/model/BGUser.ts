@@ -1,14 +1,14 @@
 ﻿"use strict";
 
 import { JitsiParticipant } from "../jitsi/JitsiParticipant";
+import { InputMediaPolicy } from "./InputDevicePolicy";
 
 export class UserInfo {
-    Id: string; //connectionId
+    Id: string = ""; //connectionId
     //BG_Id: string;
-    Jitsi_Id: string; 
-    Name: string;
-    IsHost: boolean;
-    IsAnonymous: boolean;
-    useMedia: { useCamera: boolean, useMic: boolean }
-    mediaMute: { audioMute: boolean, videoMute: boolean }
+    Jitsi_Id: string = ""; 
+    Name: string = "";
+    IsHost: boolean = false;
+    IsAnonymous: boolean = false;
+    mediaPolicy: InputMediaPolicy = { useCamera: false, useMic: false };
 }

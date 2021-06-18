@@ -1,4 +1,4 @@
-﻿export class InputDeviceUsePolicy {
+﻿export class InputMediaPolicy {
     useCamera: boolean;
     useMic: boolean;
 }

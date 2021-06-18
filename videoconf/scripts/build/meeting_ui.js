@@ -25,6 +25,9 @@ var UserProperty_1 = require("./enum/UserProperty");
 var SettingDialog_1 = require("./components/SettingDialog");
 var ChattingPanel_1 = require("./components/ChattingPanel");
 var ParticipantListPanel_1 = require("./components/ParticipantListPanel");
+var NotificationType_1 = require("./enum/NotificationType");
+var snippet_1 = require("./util/snippet");
+var AskDialog_1 = require("./components/AskDialog");
 var PanelVideoState;
 (function (PanelVideoState) {
     PanelVideoState["NoCamera"] = "no-camera";
@@ -51,6 +54,7 @@ var MeetingUI = /** @class */ (function () {
         this.userNameClass = "displayname";
         this.activeSpeakerClass = "active-speaker";
         this.fullscreenClass = "video-fullscreen";
+        this.privateChatClass = "private-chat";
         this.initTopInfo = false;
         this.nPanelInstanceId = 1; //increased when add new, but not decreased when remove panel
         this.meeting = null;
@@ -75,6 +79,7 @@ var MeetingUI = /** @class */ (function () {
         props.unreadBadgeElement = document.querySelector(".chat-badge");
         props.openCallback = this.refreshCardViews.bind(this);
         props.sendChat = this.meeting.sendChatMessage.bind(this.meeting);
+        props.sendPrivateChat = this.meeting.sendPrivateChatMessage.bind(this.meeting);
         this.chattingPanel.init(props);
         this.participantsListPanel = new ParticipantListPanel_1.ParticipantListPanel();
         var lProps = new ParticipantListPanel_1.ParticipantListPanelProps();
@@ -83,39 +88,39 @@ var MeetingUI = /** @class */ (function () {
         this.participantsListPanel.init(lProps);
     }
     MeetingUI.prototype.registerEventHandlers = function () {
-        var _this = this;
+        var _this_1 = this;
         $(window).resize(function () {
-            _this.refreshCardViews();
+            _this_1.refreshCardViews();
         });
         window.addEventListener('unload', function () {
-            _this.meeting.forceStop();
+            _this_1.meeting.forceStop();
         });
         $(document).ready(function () {
-            _this.refreshCardViews();
-            var _this = _this;
-            $(_this.toolbarLeaveButtonElement).click(function () {
-                _this.meeting.stop();
+            _this_1.refreshCardViews();
+            var _this = _this_1;
+            $(_this_1.toolbarLeaveButtonElement).click(function () {
+                _this_1.meeting.stop();
             });
-            if (_this.meeting.config.hideToolbarOnMouseOut) {
+            if (_this_1.meeting.config.hideToolbarOnMouseOut) {
                 $("#content").hover(function (_) {
-                    $(_this.toolbarElement).addClass("visible");
-                    if (_this.initTopInfo)
-                        $(_this.topInfobarElement).addClass("visible");
+                    $(_this_1.toolbarElement).addClass("visible");
+                    if (_this_1.initTopInfo)
+                        $(_this_1.topInfobarElement).addClass("visible");
                 }, function (_) {
-                    $(_this.toolbarElement).removeClass("visible");
-                    if (_this.initTopInfo)
-                        $(_this.topInfobarElement).removeClass("visible");
+                    $(_this_1.toolbarElement).removeClass("visible");
+                    if (_this_1.initTopInfo)
+                        $(_this_1.topInfobarElement).removeClass("visible");
                 }).click(function () {
-                    $("." + _this.popupMenuClass).removeClass("visible");
+                    $("." + _this_1.popupMenuClass).removeClass("visible");
                 });
             }
             else {
-                $(_this.toolbarElement).addClass("visible");
-                if (_this.initTopInfo)
-                    $(_this.topInfobarElement).addClass("visible");
+                $(_this_1.toolbarElement).addClass("visible");
+                if (_this_1.initTopInfo)
+                    $(_this_1.topInfobarElement).addClass("visible");
             }
             $("#mic-enable").click(function () {
-                _this.meeting.OnToggleMuteMyAudio();
+                _this_1.meeting.OnToggleMuteMyAudio();
                 /*var el = $(this).find(".toolbox-icon");
                 el.toggleClass("toggled");
                 if (el.hasClass("toggled")) {
@@ -128,7 +133,7 @@ var MeetingUI = /** @class */ (function () {
                 }*/
             });
             $("#camera-enable").click(function () {
-                _this.meeting.OnToggleMuteMyVideo();
+                _this_1.meeting.OnToggleMuteMyVideo();
                 /*var el = $(this).find(".toolbox-icon");
                 el.toggleClass("toggled");
                 if (el.hasClass("toggled")) {
@@ -137,48 +142,56 @@ var MeetingUI = /** @class */ (function () {
                     el.find("path").attr("d", "M13.75 5.5H3.667c-1.013 0-1.834.82-1.834 1.833v7.334c0 1.012.821 1.833 1.834 1.833H13.75c1.012 0 1.833-.82 1.833-1.833v-.786l3.212 1.835a.916.916 0 001.372-.796V7.08a.917.917 0 00-1.372-.796l-3.212 1.835v-.786c0-1.012-.82-1.833-1.833-1.833zm0 3.667v5.5H3.667V7.333H13.75v1.834zm4.583 4.174l-2.75-1.572v-1.538l2.75-1.572v4.682z");
                 }*/
             });
-            $(_this.toolbarChatButtonElement).on('click', function (_) {
-                _this.chattingPanel.toggleOpen();
+            $(_this_1.toolbarChatButtonElement).on('click', function (_) {
+                _this_1.chattingPanel.toggleOpen();
             });
-            $(_this.toolbarDesktopShareButtonElement).on("click", function () {
-                _this.meeting.toggleScreenShare();
+            $(_this_1.toolbarDesktopShareButtonElement).on("click", function () {
+                _this_1.meeting.toggleScreenShare();
             });
-            $(_this.toolbarRecordButtonElement).on('click', function () {
-                _this.meeting.toggleRecording();
+            $(_this_1.toolbarRecordButtonElement).on('click', function () {
+                _this_1.meeting.toggleRecording();
             });
-            $(_this.toolbarSettingButtonElement).on('click', function () {
-                _this.showSettingDialog();
+            $(_this_1.toolbarSettingButtonElement).on('click', function () {
+                _this_1.showSettingDialog();
+            });
+            document.addEventListener('click', function (e) {
+                var inside = $(e.target).closest("." + _this_1.popupMenuClass).length > 0;
+                if (!inside) {
+                    $("." + _this_1.popupMenuClass).removeClass("visible");
+                }
             });
         });
     };
+    MeetingUI.prototype.updateByRole = function (isHost) {
+        var isWebinar = this.meeting.roomInfo.IsWebinar;
+        if (isWebinar && !isHost)
+            this.showParticipantListButton(false);
+        else
+            this.showParticipantListButton(true);
+        this.participantsListPanel.updateByRole(isHost);
+    };
     MeetingUI.prototype.registerPanelEventHandler = function (panel) {
-        var popupMenuClass = this.popupMenuClass;
-        var popupMenuButtonClass = this.popupMenuButtonClass;
-        var panelContainerElement = this.panelContainerElement;
         var _this = this;
         $(panel)
-            .on('click', "." + popupMenuButtonClass, function (e) {
-            $(panelContainerElement).find("." + popupMenuClass).removeClass("visible");
-            $(this).find("." + popupMenuClass).toggleClass("visible");
+            .on('click', "." + _this.popupMenuButtonClass, function (e) {
+            $("." + _this.popupMenuClass).removeClass("visible");
+            $(this).find("." + _this.popupMenuClass).addClass("visible").focus();
             e.stopPropagation();
         })
-            .on('click', '.grant-moderator', function (e) {
-            $(this).closest("." + popupMenuClass).removeClass("visible");
-            e.stopPropagation();
-        })
-            .on('click', '.audio-mute', function (e) {
-            $(this).closest("." + popupMenuClass).removeClass("visible");
-            e.stopPropagation();
-        })
-            .on('click', '.video-mute', function (e) {
-            $(this).closest("." + popupMenuClass).removeClass("visible");
+            .on('click', 'li.overflow-menu-item', function (e) {
+            $(this).closest("." + _this.popupMenuClass).removeClass("visible");
             e.stopPropagation();
         })
             .on('click', '.fullscreen', function (e) {
-            $(this).closest("." + popupMenuClass).removeClass("visible");
-            e.stopPropagation();
-            $(panel).toggleClass("video-fullscreen");
+            $(panel).toggleClass(_this.fullscreenClass);
             _this.refreshCardViews();
+            var label = $(this).find(".label");
+            if ($(panel).hasClass(_this.fullscreenClass)) {
+                label.html("Exit full screen");
+            }
+            else {
+                label.html("View full screen");
+            }
         })
             .on('mouseover', function () {
             $(this).removeClass("display-video");
@@ -189,10 +202,7 @@ var MeetingUI = /** @class */ (function () {
             $(this).addClass("display-video");
         })
             .on('dblclick', function (e) {
-            $(this).closest("." + popupMenuClass).removeClass("visible");
-            e.stopPropagation();
-            $(panel).toggleClass("video-fullscreen");
-            _this.refreshCardViews();
+            $(this).find(".fullscreen").trigger("click");
         });
     };
     MeetingUI.prototype._getPanelFromVideoElement = function (videoElem) {
@@ -258,7 +268,7 @@ var MeetingUI = /** @class */ (function () {
         this.refreshCardViews();
     };
     MeetingUI.prototype.updatePanelOnJitsiUser = function (videoElem, myInfo, user) {
-        var _this = this;
+        var _this_1 = this;
         var panel = this._getPanelFromVideoElement(videoElem);
         if (!panel)
             return;
@@ -323,29 +333,34 @@ var MeetingUI = /** @class */ (function () {
         //popup menu handlers
         if (myInfo.IsHost) {
             $(grantModeratorPopupMenu).unbind('click').on('click', function () {
-                _this.meeting.grantModeratorRole(user.getId());
+                _this_1.meeting.grantModeratorRole(user.getId());
             });
             $(audioMutePopupMenu).unbind('click').on('click', function () {
-                _this.meeting.muteUserAudio(user.getId(), !user.isAudioMuted());
+                _this_1.meeting.muteUserAudio(user.getId(), !user.isAudioMuted());
             });
             $(videoMutePopupMenu).unbind('click').on('click', function () {
-                _this.meeting.muteUserVideo(user.getId(), !user.isVideoMuted());
+                _this_1.meeting.muteUserVideo(user.getId(), !user.isVideoMuted());
             });
         }
+        //private chat handler
+        $(panel).find("." + this.privateChatClass).click(function (_) {
+            _this_1.chattingPanel.open(true);
+            _this_1.chattingPanel.setPrivateState(user.getId(), user.getDisplayName());
+        });
         //active speaker(blue border)
         $(panel).removeClass(this.activeSpeakerClass);
     };
     MeetingUI.prototype.updatePanelOnMyBGUser = function (videoElem, myInfo, localTracks) {
-        var _this = this;
+        var _this_1 = this;
         var panel = this._getPanelFromVideoElement(videoElem);
         if (!panel)
             return;
-        var audioMuted = false, videoMuted = false;
+        var audioMuted = true, videoMuted = true;
         localTracks.forEach(function (track) {
-            if (track.getType() === MediaType_1.MediaType.VIDEO && track.isMuted())
-                videoMuted = true;
-            else if (track.getType() === MediaType_1.MediaType.AUDIO && track.isMuted())
-                audioMuted = true;
+            if (track.getType() === MediaType_1.MediaType.VIDEO && !track.isMuted())
+                videoMuted = false;
+            else if (track.getType() === MediaType_1.MediaType.AUDIO && !track.isMuted())
+                audioMuted = false;
         });
         //name
         this.setUserName(myInfo.Name, videoElem);
@@ -356,13 +371,17 @@ var MeetingUI = /** @class */ (function () {
             }
         });
         this.setShotnameVisible(!isVisibleVideo, videoElem);
+        //bottom small icons
+        this._getVideoMuteElementFromPanel(panel).style.display = videoMuted ? "block" : "none";
+        this._getAudioMuteElementFromPanel(panel).style.display = audioMuted ? "block" : "none";
+        this._getModeratorStarElementFromPanel(panel).style.display = myInfo.IsHost ? "block" : "none";
         //popup menu
         var audioMutePopupMenu = this._getPopupMenuAudioMuteFromPanel(panel);
         var videoMutePopupMenu = this._getPopupMenuVideoMuteFromPanel(panel);
         var grantModeratorPopupMenu = this._getPopupMenuGrantModeratorFromPanel(panel);
         if (myInfo.IsHost) {
-            videoMutePopupMenu.style.display = myInfo.useMedia.useCamera ? "flex" : "none";
-            audioMutePopupMenu.style.display = myInfo.useMedia.useMic ? "flex" : "none";
+            videoMutePopupMenu.style.display = myInfo.mediaPolicy.useCamera ? "flex" : "none";
+            audioMutePopupMenu.style.display = myInfo.mediaPolicy.useMic ? "flex" : "none";
             grantModeratorPopupMenu.style.display = "flex";
         }
         else {
@@ -373,7 +392,7 @@ var MeetingUI = /** @class */ (function () {
         grantModeratorPopupMenu.style.display = "none";
         //popup menu audio icon/label change
         if (audioMutePopupMenu.style.display === 'flex') {
-            if (myInfo.mediaMute.audioMute) {
+            if (audioMuted) {
                 $(audioMutePopupMenu).find(".label").html("Unmute Audio");
                 $(audioMutePopupMenu).find("path").attr("d", vector_icon_1.VectorIcon.AUDIO_MUTE_ICON);
             }
@@ -383,7 +402,7 @@ var MeetingUI = /** @class */ (function () {
             }
         }
         if (videoMutePopupMenu.style.display === 'flex') {
-            if (myInfo.mediaMute.videoMute) {
+            if (videoMuted) {
                 $(videoMutePopupMenu).find(".label").html("Unmute Video");
                 $(videoMutePopupMenu).find("path").attr("d", vector_icon_1.VectorIcon.VIDEO_MUTE_ICON);
             }
@@ -395,16 +414,14 @@ var MeetingUI = /** @class */ (function () {
         //popup menu handlers
         if (myInfo.IsHost) {
             $(audioMutePopupMenu).unbind('click').on('click', function () {
-                _this.meeting.muteMyAudio(!audioMuted);
+                _this_1.meeting.muteMyAudio(!audioMuted);
             });
             $(videoMutePopupMenu).unbind('click').on('click', function () {
-                _this.meeting.muteMyVideo(!videoMuted);
+                _this_1.meeting.muteMyVideo(!videoMuted);
             });
         }
-        //bottom small icons
-        this._getVideoMuteElementFromPanel(panel).style.display = videoMuted ? "block" : "none";
-        this._getAudioMuteElementFromPanel(panel).style.display = audioMuted ? "block" : "none";
-        this._getModeratorStarElementFromPanel(panel).style.display = myInfo.IsHost ? "block" : "none";
+        //hide private-chat item
+        $(panel).find("." + this.privateChatClass).hide();
         //active speaker(blue border)
         $(panel).addClass(this.activeSpeakerClass);
     };
@@ -420,7 +437,7 @@ var MeetingUI = /** @class */ (function () {
         this._getNameElementFromPanel(panel).innerHTML = name;
         //shortname
         var shortNamePanel = this._getShortNameElementFromPanel(panel);
-        $("text", shortNamePanel).html(this.getShortName(name));
+        $("text", shortNamePanel).html(snippet_1.avatarName(name));
     };
     MeetingUI.prototype.updateToolbar = function (myInfo, localTracks) {
         var audioMuted = false, videoMuted = false;
@@ -456,7 +473,6 @@ var MeetingUI = /** @class */ (function () {
             $(this.toolbarVideoButtonElement).find("path").attr("d", vector_icon_1.VectorIcon.VIDEO_UNMUTE_ICON);
             $(this.toolbarVideoButtonElement).removeClass("muted");
         }
-        this.userListToggleButtonElement.style.visibility = (myInfo.IsHost) ? "visible" : "hidden";
     };
     MeetingUI.prototype.setScreenShare = function (on) {
         if (on) {
@@ -473,12 +489,6 @@ var MeetingUI = /** @class */ (function () {
         else {
             $(".toolbox-icon", this.toolbarRecordButtonElement).removeClass("toggled");
         }
-    };
-    MeetingUI.prototype.getShortName = function (fullName) {
-        if (!fullName || fullName.length <= 1)
-            return "";
-        else
-            return fullName.toUpperCase().substr(0, 2);
     };
     MeetingUI.prototype.showModeratorIcon = function (panel, show) {
         this._getModeratorStarElementFromPanel(panel).style.display = show ? "block" : "none";
@@ -619,25 +629,11 @@ var MeetingUI = /** @class */ (function () {
                                     </div> \
                                 </div> \
                             </div>';
-        var panelHtml = "\n        <span class=\"" + this.panelClass + " display-video " + activeSpeaker + "\">\n            " + videoTag + " \n            " + audioTag + "\n            <div class=\"videocontainer__toolbar\">\n                <div> " + cameraStatus + " " + micStatus + " " + moderatorStatus + "</div>\n            </div>\n            <div class=\"videocontainer__hoverOverlay\"></div>\n            <div class=\"displayNameContainer\"><span class=\"displayname\" id=\"localDisplayName\">Name</span></div>\n            <div class=\"avatar-container " + avatarVisible + "\" style=\"height: 105.5px; width: 105.5px;\">\n                <div class=\"avatar  userAvatar\" style=\"background-color: rgba(234, 255, 128, 0.4); font-size: 180%; height: 100%; width: 100%;\">\n                    <svg class=\"avatar-svg\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n                        <text dominant-baseline=\"central\" fill=\"rgba(255,255,255,.6)\" font-size=\"40pt\" text-anchor=\"middle\" x=\"50\" y=\"50\">Name</text>\n                    </svg>\n                </div>\n            </div >\n            <span class=\"" + this.popupMenuButtonClass + "\">\n                <div class=\"\" id=\"\">\n                    <span class=\"popover-trigger remote-video-menu-trigger\">\n                        <div class=\"jitsi-icon\">\n                            <svg height=\"1em\" width=\"1em\" viewBox=\"0 0 24 24\">\n                                <path d=\"M12 15.984c1.078 0 2.016.938 2.016 2.016s-.938 2.016-2.016 2.016S9.984 19.078 9.984 18s.938-2.016 2.016-2.016zm0-6c1.078 0 2.016.938 2.016 2.016s-.938 2.016-2.016 2.016S9.984 13.078 9.984 12 10.922 9.984 12 9.984zm0-1.968c-1.078 0-2.016-.938-2.016-2.016S10.922 3.984 12 3.984s2.016.938 2.016 2.016S13.078 8.016 12 8.016z\"></path>                             </svg>\n                        </div>\n                    </span>\n                </div>\n                <div class=\"" + this.popupMenuClass + "\" style=\"position: relative; right: 168px;  top: 25px; width: 175px;\">\n                    <ul aria-label=\"More actions menu\" class=\"overflow-menu\">\n                        <li aria-label=\"Grant Moderator\" class=\"overflow-menu-item grant-moderator\" tabindex=\"0\" role=\"button\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon \">\n                                    <svg height=\"22\" width=\"22\" viewBox=\"0 0 24 24\">\n                                        <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M14 4a2 2 0 01-1.298 1.873l1.527 4.07.716 1.912c.062.074.126.074.165.035l1.444-1.444 2.032-2.032a2 2 0 111.248.579L19 19a2 2 0 01-2 2H7a2 2 0 01-2-2L4.166 8.993a2 2 0 111.248-.579l2.033 2.033L8.89 11.89c.087.042.145.016.165-.035l.716-1.912 1.527-4.07A2 2 0 1114 4zM6.84 17l-.393-4.725 1.029 1.03a2.1 2.1 0 003.451-.748L12 9.696l1.073 2.86a2.1 2.1 0 003.451.748l1.03-1.03L17.16 17H6.84z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label\">Grant Moderator</span>\n                        </li>\n                        <li aria-label=\"Mute\" class=\"overflow-menu-item audio-mute\" tabindex=\"0\" role=\"button\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon \">\n                                    <svg fill=\"none\" height=\"22\" width=\"22\" viewBox=\"0 0 22 22\">\n                                        <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M7.333 8.65V11a3.668 3.668 0 002.757 3.553.928.928 0 00-.007.114v1.757A5.501 5.501 0 015.5 11a.917.917 0 10-1.833 0c0 3.74 2.799 6.826 6.416 7.277v.973a.917.917 0 001.834 0v-.973a7.297 7.297 0 003.568-1.475l3.091 3.092a.932.932 0 101.318-1.318l-3.091-3.091.01-.013-1.311-1.311-.01.013-1.325-1.325.008-.014-1.395-1.395a1.24 1.24 0 01-.004.018l-3.61-3.609v-.023L7.334 5.993v.023l-3.909-3.91a.932.932 0 10-1.318 1.318L7.333 8.65zm1.834 1.834V11a1.833 1.833 0 002.291 1.776l-2.291-2.292zm3.682 3.683c-.29.17-.606.3-.94.386a.928.928 0 01.008.114v1.757a5.47 5.47 0 002.257-.932l-1.325-1.325zm1.818-3.476l-1.834-1.834V5.5a1.833 1.833 0 00-3.644-.287l-1.43-1.43A3.666 3.666 0 0114.667 5.5v5.19zm1.665 1.665l1.447 1.447c.357-.864.554-1.81.554-2.803a.917.917 0 10-1.833 0c0 .468-.058.922-.168 1.356z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label\">Mute</span>\n                        </li>\n                        <li aria-label=\"Disable camera\" class=\"overflow-menu-item video-mute\" tabindex=\"0\" role=\"button\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon\">\n                                    <svg fill=\"none\" height=\"22\" width=\"22\" viewBox=\"0 0 22 22\">\n                                        <path clip-rule=\"evenodd\" d=\"M6.84 5.5h-.022L3.424 2.106a.932.932 0 10-1.318 1.318L4.182 5.5h-.515c-1.013 0-1.834.82-1.834 1.833v7.334c0 1.012.821 1.833 1.834 1.833H13.75c.404 0 .777-.13 1.08-.352l3.746 3.746a.932.932 0 101.318-1.318l-4.31-4.31v-.024L13.75 12.41v.023l-5.1-5.099h.024L6.841 5.5zm6.91 4.274V7.333h-2.44L9.475 5.5h4.274c1.012 0 1.833.82 1.833 1.833v.786l3.212-1.835a.917.917 0 011.372.796v7.84c0 .344-.19.644-.47.8l-3.736-3.735 2.372 1.356V8.659l-2.75 1.571v1.377L13.75 9.774zM3.667 7.334h2.349l7.333 7.333H3.667V7.333z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label\">Disable camera</span>\n                        </li>\n                        <li aria-label=\"Toggle full screen\" class=\"overflow-menu-item fullscreen\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon \">\n                                    <svg fill=\"none\" height=\"22\" width=\"22\" viewBox=\"0 0 22 22\">\n                                        <path clip-rule=\"evenodd\" d=\"M8.25 2.75H3.667a.917.917 0 00-.917.917V8.25h1.833V4.583H8.25V2.75zm5.5 1.833V2.75h4.583c.507 0 .917.41.917.917V8.25h-1.833V4.583H13.75zm0 12.834h3.667V13.75h1.833v4.583c0 .507-.41.917-.917.917H13.75v-1.833zM4.583 13.75v3.667H8.25v1.833H3.667a.917.917 0 01-.917-.917V13.75h1.833z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label overflow-menu-item-text\">View full screen</span>\n                        </li>\n                    </ul>\n                </div>\n            </span>\n        </span >";
+        var panelHtml = "\n        <span class=\"" + this.panelClass + " display-video " + activeSpeaker + "\">\n            " + videoTag + " \n            " + audioTag + "\n            <div class=\"videocontainer__toolbar\">\n                <div> " + cameraStatus + " " + micStatus + " " + moderatorStatus + "</div>\n            </div>\n            <div class=\"videocontainer__hoverOverlay\"></div>\n            <div class=\"displayNameContainer\"><span class=\"displayname\" id=\"localDisplayName\">Name</span></div>\n            <div class=\"avatar-container " + avatarVisible + "\" style=\"height: 105.5px; width: 105.5px;\">\n                <div class=\"avatar  userAvatar\" style=\"background-color: rgba(234, 255, 128, 0.4); font-size: 180%; height: 100%; width: 100%;\">\n                    <svg class=\"avatar-svg\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n                        <text dominant-baseline=\"central\" fill=\"rgba(255,255,255,.6)\" font-size=\"40pt\" text-anchor=\"middle\" x=\"50\" y=\"50\">Name</text>\n                    </svg>\n                </div>\n            </div >\n            <span class=\"" + this.popupMenuButtonClass + "\">\n                <div class=\"\" id=\"\">\n                    <span class=\"popover-trigger remote-video-menu-trigger\">\n                        <div class=\"jitsi-icon\">\n                            <svg height=\"1em\" width=\"1em\" viewBox=\"0 0 24 24\">\n                                <path d=\"M12 15.984c1.078 0 2.016.938 2.016 2.016s-.938 2.016-2.016 2.016S9.984 19.078 9.984 18s.938-2.016 2.016-2.016zm0-6c1.078 0 2.016.938 2.016 2.016s-.938 2.016-2.016 2.016S9.984 13.078 9.984 12 10.922 9.984 12 9.984zm0-1.968c-1.078 0-2.016-.938-2.016-2.016S10.922 3.984 12 3.984s2.016.938 2.016 2.016S13.078 8.016 12 8.016z\"></path>                             </svg>\n                        </div>\n                    </span>\n                </div>\n                <div class=\"" + this.popupMenuClass + "\" tabIndex=-1 style=\"position: relative; right: 168px;  top: 25px; width: 175px;\">\n                    <ul aria-label=\"More actions menu\" class=\"overflow-menu\">\n                        <li aria-label=\"Grant Moderator\" class=\"overflow-menu-item grant-moderator\" tabindex=\"0\" role=\"button\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon \">\n                                    <svg height=\"22\" width=\"22\" viewBox=\"0 0 24 24\">\n                                        <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M14 4a2 2 0 01-1.298 1.873l1.527 4.07.716 1.912c.062.074.126.074.165.035l1.444-1.444 2.032-2.032a2 2 0 111.248.579L19 19a2 2 0 01-2 2H7a2 2 0 01-2-2L4.166 8.993a2 2 0 111.248-.579l2.033 2.033L8.89 11.89c.087.042.145.016.165-.035l.716-1.912 1.527-4.07A2 2 0 1114 4zM6.84 17l-.393-4.725 1.029 1.03a2.1 2.1 0 003.451-.748L12 9.696l1.073 2.86a2.1 2.1 0 003.451.748l1.03-1.03L17.16 17H6.84z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label\">Grant Moderator</span>\n                        </li>\n                        <li aria-label=\"Mute\" class=\"overflow-menu-item audio-mute\" tabindex=\"0\" role=\"button\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon \">\n                                    <svg fill=\"none\" height=\"22\" width=\"22\" viewBox=\"0 0 22 22\">\n                                        <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M7.333 8.65V11a3.668 3.668 0 002.757 3.553.928.928 0 00-.007.114v1.757A5.501 5.501 0 015.5 11a.917.917 0 10-1.833 0c0 3.74 2.799 6.826 6.416 7.277v.973a.917.917 0 001.834 0v-.973a7.297 7.297 0 003.568-1.475l3.091 3.092a.932.932 0 101.318-1.318l-3.091-3.091.01-.013-1.311-1.311-.01.013-1.325-1.325.008-.014-1.395-1.395a1.24 1.24 0 01-.004.018l-3.61-3.609v-.023L7.334 5.993v.023l-3.909-3.91a.932.932 0 10-1.318 1.318L7.333 8.65zm1.834 1.834V11a1.833 1.833 0 002.291 1.776l-2.291-2.292zm3.682 3.683c-.29.17-.606.3-.94.386a.928.928 0 01.008.114v1.757a5.47 5.47 0 002.257-.932l-1.325-1.325zm1.818-3.476l-1.834-1.834V5.5a1.833 1.833 0 00-3.644-.287l-1.43-1.43A3.666 3.666 0 0114.667 5.5v5.19zm1.665 1.665l1.447 1.447c.357-.864.554-1.81.554-2.803a.917.917 0 10-1.833 0c0 .468-.058.922-.168 1.356z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label\">Mute</span>\n                        </li>\n                        <li aria-label=\"Disable camera\" class=\"overflow-menu-item video-mute\" tabindex=\"0\" role=\"button\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon\">\n                                    <svg fill=\"none\" height=\"22\" width=\"22\" viewBox=\"0 0 22 22\">\n                                        <path clip-rule=\"evenodd\" d=\"M6.84 5.5h-.022L3.424 2.106a.932.932 0 10-1.318 1.318L4.182 5.5h-.515c-1.013 0-1.834.82-1.834 1.833v7.334c0 1.012.821 1.833 1.834 1.833H13.75c.404 0 .777-.13 1.08-.352l3.746 3.746a.932.932 0 101.318-1.318l-4.31-4.31v-.024L13.75 12.41v.023l-5.1-5.099h.024L6.841 5.5zm6.91 4.274V7.333h-2.44L9.475 5.5h4.274c1.012 0 1.833.82 1.833 1.833v.786l3.212-1.835a.917.917 0 011.372.796v7.84c0 .344-.19.644-.47.8l-3.736-3.735 2.372 1.356V8.659l-2.75 1.571v1.377L13.75 9.774zM3.667 7.334h2.349l7.333 7.333H3.667V7.333z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label\">Disable camera</span>\n                        </li>\n                        <li aria-label=\"Toggle full screen\" class=\"overflow-menu-item fullscreen\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon \">\n                                    <svg fill=\"none\" height=\"22\" width=\"22\" viewBox=\"0 0 22 22\">\n                                        <path clip-rule=\"evenodd\" d=\"M8.25 2.75H3.667a.917.917 0 00-.917.917V8.25h1.833V4.583H8.25V2.75zm5.5 1.833V2.75h4.583c.507 0 .917.41.917.917V8.25h-1.833V4.583H13.75zm0 12.834h3.667V13.75h1.833v4.583c0 .507-.41.917-.917.917H13.75v-1.833zM4.583 13.75v3.667H8.25v1.833H3.667a.917.917 0 01-.917-.917V13.75h1.833z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label overflow-menu-item-text\">View full screen</span>\n                        </li>\n                        <li aria-label=\"Private Chat\" class=\"overflow-menu-item private-chat\">\n                            <span class=\"overflow-menu-item-icon\">\n                                <div class=\"jitsi-icon \">\n                                    <svg fill=\"none\" height=\"22\" width=\"22\" viewBox=\"0 0 22 22\">\n                                        <path clip-rule=\"evenodd\" d=\"M19,8H18V5a3,3,0,0,0-3-3H5A3,3,0,0,0,2,5V17a1,1,0,0,0,.62.92A.84.84,0,0,0,3,18a1,1,0,0,0,.71-.29l2.81-2.82H8v1.44a3,3,0,0,0,3,3h6.92l2.37,2.38A1,1,0,0,0,21,22a.84.84,0,0,0,.38-.08A1,1,0,0,0,22,21V11A3,3,0,0,0,19,8ZM8,11v1.89H6.11a1,1,0,0,0-.71.29L4,14.59V5A1,1,0,0,1,5,4H15a1,1,0,0,1,1,1V8H11A3,3,0,0,0,8,11Zm12,7.59-1-1a1,1,0,0,0-.71-.3H11a1,1,0,0,1-1-1V11a1,1,0,0,1,1-1h8a1,1,0,0,1,1,1Z\"></path>                                     </svg>\n                                </div>\n                            </span>\n                            <span class=\"label overflow-menu-item-text\">Private chat</span>\n                        </li>\n                    </ul>\n                </div>\n            </span>\n        </span >";
         var panel = $(panelHtml);
         $("#" + this.panelContainerId).append(panel[0]);
         this.refreshCardViews();
         return panel[0];
-    };
-    MeetingUI.prototype.Log = function (message) {
-        if ($("#logPanel").length <= 0) {
-            var logPanel = "<div id=\"logPanel\" style=\"position: fixed;width: 300px;height: 200px;background: black;bottom:0px;right: 0px;\n                                z-index: 100000;border-left: 1px dashed rebeccapurple;border-top: 1px dashed rebeccapurple;overflow-y:auto;\"></div>";
-            $("body").append(logPanel);
-        }
-        var colors = ['blanchedalmond', 'hotpink', 'chartreuse', 'coral', 'gold', 'greenyellow', 'violet', 'wheat'];
-        var color = colors[Math.floor(Math.random() * 100) % colors.length];
-        var messageItm = "<div style=\"color:" + color + ";\"><span>" + message + "</span></div>";
-        $("#logPanel").append(messageItm);
-        $('#logPanel').scroll();
-        $("#logPanel").animate({
-            scrollTop: 20000
-        }, 200);
     };
     MeetingUI.prototype.updateTime = function (timeLabel) {
         this.timestampElement.innerHTML = timeLabel;
@@ -662,9 +658,6 @@ var MeetingUI = /** @class */ (function () {
         settingDialog.init(props);
         settingDialog.show();
     };
-    MeetingUI.prototype.onChatMessage = function (name, msg, timestamp) {
-        this.chattingPanel.receiveMessage(name, msg, timestamp);
-    };
     //add, remove participant to and from list
     MeetingUI.prototype.addParticipant = function (jitsiId, name, me, useCamera, useMic) {
         this.participantsListPanel.addParticipant(jitsiId, name, me, useCamera, useMic);
@@ -674,6 +667,60 @@ var MeetingUI = /** @class */ (function () {
     };
     MeetingUI.prototype.showParticipantListButton = function (show) {
         $("#open-participants-toggle").css("visibility", show ? "visible" : "hidden");
+    };
+    MeetingUI.prototype.Log = function (message) {
+        if ($("#logPanel").length <= 0) {
+            var logPanel = "<div id=\"logPanel\" style=\"position: fixed;width: 300px;height: 200px;background: black;top:0px;left: 0px;\n                                z-index: 100000;border-right: 1px dashed rebeccapurple;border-bottom: 1px dashed rebeccapurple;overflow-y:auto;\"></div>";
+            $("body").append(logPanel);
+        }
+        var colors = ['blanchedalmond', 'hotpink', 'chartreuse', 'coral', 'gold', 'greenyellow', 'violet', 'wheat'];
+        var color = colors[Math.floor(Math.random() * 100) % colors.length];
+        var messageItm = "<div style=\"color:" + color + ";\"><span>" + message + "</span></div>";
+        $("#logPanel").append(messageItm);
+        $('#logPanel').scroll();
+        $("#logPanel").animate({
+            scrollTop: 20000
+        }, 200);
+    };
+    MeetingUI.prototype.askDialog = function (title, message, icon, allowCallback, denyCallback, param) {
+        var props = new AskDialog_1.AskDialogProps();
+        props.title = title;
+        props.message = message;
+        props.icon = icon;
+        props.isWarning = true;
+        props.allowCallback = allowCallback;
+        props.denyCallback = denyCallback;
+        props.param = param;
+        var dlg = new AskDialog_1.AskDialog(props);
+        dlg.show();
+    };
+    MeetingUI.prototype.notification = function (title, message, icon) {
+        if (!icon)
+            icon = NotificationType_1.NotificationType.Info;
+        $.toast({
+            heading: title,
+            text: message,
+            showHideTransition: 'slide',
+            hideAfter: false,
+            bgColor: "#164157",
+            icon: icon,
+            stack: 5,
+            loader: false,
+        });
+    };
+    MeetingUI.prototype.notification_warning = function (title, message, icon) {
+        if (!icon)
+            icon = NotificationType_1.NotificationType.Warning;
+        $.toast({
+            heading: title,
+            text: message,
+            showHideTransition: 'slide',
+            hideAfter: 7000,
+            bgColor: "#800000",
+            icon: icon,
+            stack: 5,
+            loader: false
+        });
     };
     return MeetingUI;
 }());

@@ -5,10 +5,11 @@ import { VectorIcon } from "./vector_icon";
 class ParticipantItemProps {
     jitsiId: string;
     name: string;
+    me: boolean;
     useCamera: boolean;
     useMic: boolean;
     onUseCamera: (jitsiId: string, use:boolean) => {};
-    onUseMic: (jitsiId: string, use:boolean) => {};
+    onUseMic: (jitsiId: string, use: boolean) => {};
 }
 
 class ParticipantItem {
@@ -18,12 +19,14 @@ class ParticipantItem {
     nameElement: HTMLElement;
     cameraButtonElement: HTMLElement;
     micButtonElement: HTMLElement;
+
     cameraIconElement: SVGPathElement;
     micIconElement: SVGPathElement;
 
     //state
     useCamera: boolean;
     useMic: boolean;
+    isHost: boolean;
 
     //props
     props: ParticipantItemProps;
@@ -87,7 +90,10 @@ class ParticipantItem {
             avatarColors[random(0, avatarColors.length)]);
 
         //name
-        $(this.nameElement).html(this.props.name);
+        if (this.props.me)
+            $(this.nameElement).html(this.props.name + " (Me)");
+        else 
+            $(this.nameElement).html(this.props.name);
 
         //icon
         this.updateCameraIcon();
@@ -110,14 +116,37 @@ class ParticipantItem {
     }
 
     onToggleCamera() {
+        if (!this.isHost)
+            return;
         this.useCamera = !this.useCamera;
         this.updateCameraIcon();
         this.props.onUseCamera(this.props.jitsiId, this.useCamera);
     }
     onToggleMic() {
+        if (!this.isHost)
+            return;
         this.useMic = !this.useMic;
         this.updateMicIcon();
         this.props.onUseMic(this.props.jitsiId, this.useMic);
+    }
+
+    blockMic() {
+        if (this.useMic)
+            this.onToggleMic();
+    }
+
+    setMicState(use: boolean) {
+        this.useMic = use;
+        this.updateMicIcon();
+    }
+
+    setCameraState(use: boolean) {
+        this.useCamera = use;
+        this.updateCameraIcon();
+    }
+
+    setRole(isHost: boolean) {
+        this.isHost = isHost;
     }
 
     updateCameraIcon() {
@@ -141,22 +170,36 @@ export class ParticipantListPanel {
     rootElement: HTMLElement;
     participantCountElement: HTMLElement;
     participantListElement: HTMLElement;
+    muteAllButtonElement: HTMLElement;
 
     //states
     participantItemMap: Map<string, ParticipantItem> = new Map();
+    isHost: boolean = false;
 
     //props
     props: ParticipantListPanelProps;
 
     constructor() {
         this.rootElement = document.getElementById("participants-list");
-        this.participantCountElement = $(this.rootElement).find("#participant-count")[0];
-        this.participantListElement = $(this.rootElement).find("#participants-list-body")[0];
+        const $root = $(this.rootElement);
+        this.participantCountElement = $root.find("#participant-count")[0];
+        this.participantListElement = $root.find("#participants-list-body")[0];
+        this.muteAllButtonElement = $root.find("#participants-list-footer>.btn")[0];
     }
 
     init(props: ParticipantListPanelProps) {
         this.props = props;
         this.updateParticipantCount();
+        this.attachHandlers();
+    }
+
+    attachHandlers() {
+        $(this.muteAllButtonElement).on('click', () => {
+            if (this.isHost) 
+            this.participantItemMap.forEach((participantItem, key) => {
+                participantItem.blockMic();
+            });
+        });
     }
 
     addParticipant(jitsiId: string, name: string, me: boolean, useCamera: boolean, useMic: boolean) {
@@ -166,13 +209,16 @@ export class ParticipantListPanel {
 
         let props = new ParticipantItemProps();
         props.jitsiId = jitsiId;
-        props.name = me? name + " (Me)" : name;
+        props.name = name;
+        props.me = me;
         props.useCamera = useCamera;
         props.useMic = useMic;
         props.onUseCamera = this.props.onUseCamera;
         props.onUseMic = this.props.onUseMic;
 
         const item = new ParticipantItem(props);
+        item.setRole(this.isHost);
+
         this.participantItemMap.set(jitsiId, item);
         this.updateParticipantCount();
 
@@ -185,7 +231,7 @@ export class ParticipantListPanel {
     }
 
     removeParticipant(jitsiId: string) {
-        if (this.participantItemMap.size <= 0 || !this.participantItemMap.has(jitsiId))
+        if (!this.participantItemMap.has(jitsiId))
             return;
 
         this.participantItemMap.get(jitsiId).removeSelf();
@@ -195,5 +241,30 @@ export class ParticipantListPanel {
 
     updateParticipantCount() {
         this.participantCountElement.innerHTML = `${this.participantItemMap.size}`;
+    }
+   
+    setCameraMediaPolicy(jitsiId: string, useCamera: boolean) {
+        const item = this.participantItemMap.get(jitsiId);
+        if (item) 
+            item.setCameraState(useCamera);
+    }
+
+    setMicMediaPolicy(jitsiId: string, useMic: boolean) {
+        const item = this.participantItemMap.get(jitsiId);
+        if (item)
+            item.setMicState(useMic);
+    }
+
+    updateByRole(isHost: boolean) {
+        this.isHost = isHost;
+
+        if (isHost)
+            $(this.rootElement).addClass("is-host");
+        else
+            $(this.rootElement).removeClass("is-host");
+        this.muteAllButtonElement.style.visibility = isHost ? "visible" : "hidden";
+        this.participantItemMap.forEach((participantItem, key) => {
+            participantItem.setRole(isHost);
+        });
     }
 }

@@ -10,8 +10,12 @@
     background: #0052cc;
 }
 
+#camera-preview-container {
+    background-color: #333;
+}
+
 #camera-preview {
-    background-color: dimgrey;
+    background-color: #333;
 }
 
 .select2-search {

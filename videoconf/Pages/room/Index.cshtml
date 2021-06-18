@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" />
     <link href="~/lib/metronic/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
     <link href="~/lib/metronic/css/style.bundle.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="~/lib/jquery-toast/jquery.toast.css" />
     <link rel="stylesheet" href="~/css/conf.css" />
     <link rel="stylesheet" href="~/css/log.css" />
 }
@@ -34,7 +35,13 @@
             </div>
         </div>
         <div id="chatconversation">
-
+        </div>
+        <div id="chat-recipient" style="display:none;">
+            <span data-nsfw-filter-status="swf">Private message to </span>
+            <div>
+                <div class="jitsi-icon "><svg height="22" width="22" viewBox="0 0 24 24"><path d="M17.016 15.609L13.407 12l3.609-3.609-1.406-1.406-3.609 3.609-3.609-3.609-1.406 1.406L10.595 12l-3.609 3.609 1.406 1.406 3.609-3.609 3.609 3.609zM12 2.016q4.125 0 7.055 2.93t2.93 7.055-2.93 7.055T12 21.986t-7.055-2.93-2.93-7.055 2.93-7.055T12 2.016z"></path></svg>
+                </div>
+            </div>
         </div>
         <div class="chat-input-container">
             <div id="chat-input">
@@ -369,7 +376,7 @@
         </div>
 
         <div class="card-body" id="participants-list-body">
-            
+
         </div>
 
         <div class="card-footer py-5 text-center" id="participants-list-footer">
@@ -400,5 +407,6 @@
 
     <script src="~/lib/metronic/plugins/global/plugins.bundle.js"></script>
     <script src="~/lib/metronic/js/scripts.bundle.js"></script>
+    <script type="text/javascript" src="~/lib/jquery-toast/jquery.toast.js"></script>
     <script type="text/javascript" src="~/scripts/meeting.js"></script>
 }

@@ -5,17 +5,26 @@ export class ChattingPanelProps {
     unreadBadgeElement: HTMLElement;
     openCallback: Function;
     sendChat: (msg: string) => void;
+    sendPrivateChat: (jitsiId: string, msg: string) => void;
 }
 
 export class ChattingPanel {
     //controls
-    container: HTMLElement;
-    closeButton: HTMLElement;
+    root: HTMLElement;
     inputField: HTMLElement;
+    sendButton: HTMLElement;
+    closeButton: HTMLElement;
+
+    privatePanel: HTMLElement;
+    privateLabelElement: HTMLElement;
+    privateCloseElement: HTMLElement;
 
     //state
     opened: boolean;
     unreadCount: number = 0;
+    privateSenderId: string;
+    privateSenderName: string;
+    isPrivate: boolean = false;
 
     //props
     props: ChattingPanelProps;
@@ -27,9 +36,13 @@ export class ChattingPanel {
     init(props: ChattingPanelProps) {
         this.props = props;
 
-        this.container = document.querySelector("#sideToolbarContainer");
+        this.root = document.getElementById("sideToolbarContainer");
         this.closeButton = document.querySelector(".chat-close-button");
         this.inputField = document.querySelector("#chat-input #usermsg");
+        this.sendButton = document.querySelector(".send-button");
+        this.privatePanel = document.querySelector("#chat-recipient");
+        this.privateLabelElement = $(this.privatePanel).find(">span")[0];
+        this.privateCloseElement = $(this.privatePanel).find(">div")[0];
 
         this.nameColors.push("#00bfff");  //deepskyblue
         this.nameColors.push("#9acd32");  //yellowgreen
@@ -55,9 +68,12 @@ export class ChattingPanel {
             if ((e.keyCode || e.which) == 13) { //Enter keycode
                 if (!e.shiftKey) {
                     e.preventDefault();
-                    this.onEnter();
+                    this.onSend();
                 }
             }
+        });
+        $(this.sendButton).on('click', () => {
+            this.onSend();
         });
 
         const _this = this;
@@ -88,20 +104,24 @@ export class ChattingPanel {
                 el.addClass("hide-smileys");
             }
         });
+
+        $(this.privateCloseElement).click(_ => {
+            this.clearPrivateState();
+        });
     }
 
     open(opened: boolean) {
         if (opened) {
             $("#video-panel").addClass("shift-right");
             $("#new-toolbox").addClass("shift-right");
-            $(this.container).removeClass("invisible");
+            $(this.root).removeClass("invisible");
             $(this.inputField).focus();
 
             $(".toolbox-icon", this.props.chatOpenButton).addClass("toggled");
         } else {
             $("#video-panel").removeClass("shift-right");
             $("#new-toolbox").removeClass("shift-right");
-            $(this.container).addClass("invisible");
+            $(this.root).addClass("invisible");
 
             $(".toolbox-icon", this.props.chatOpenButton).removeClass("toggled");
         }
@@ -114,6 +134,10 @@ export class ChattingPanel {
         this.props.openCallback();
     }
 
+    clearInput() {
+        $(this.inputField).val('');
+    }
+
     showUnreadBadge(show: boolean) {
         this.props.unreadBadgeElement.style.display = !!show ? "flex" : "none";
     }
@@ -123,52 +147,67 @@ export class ChattingPanel {
         this.open(this.opened);
     }
 
-    onEnter() {
-        let sms = $(this.inputField).val().toString().trim();
-        $(this.inputField).val('');
+    onSend() {
+        let msg = $(this.inputField).val().toString().trim();
+        this.clearInput();
 
-        if (!sms) return;
+        if (!msg) return;
 
-        sms = this.emonameToEmoicon(sms);
+        msg = this.emonameToEmoicon(msg);
         const time = this.getCurTime();
+
+        const privateClass = this.isPrivate ? "private" : "";
+        let privateDetail = "";
+        if (this.isPrivate) {
+            privateDetail = `<div style="color:#778899">private: ${this.privateSenderName}</div>`;
+        } 
 
         var sel = $("#chatconversation div.chat-message-group:last-child");
         if (sel.hasClass("local")) {
 
             sel.find(".timestamp").remove();
-            sel.append('<div class= "chatmessage-wrapper" >\
-                                        <div class="chatmessage ">\
-                                            <div class="replywrapper">\
-                                                <div class="messagecontent">\
-                                                    <div class="usermessage">' + sms + '</div>\
-                                                </div>\
-                                            </div>\
-                                        </div>\
-                                        <div class="timestamp">'+ time + '</div>\
-                                    </div >');
+            sel.append(`<div class= "chatmessage-wrapper" >\
+                            <div class="chatmessage ${privateClass}">\
+                                <div class="replywrapper">\
+                                    <div class="messagecontent">\
+                                        <div class="usermessage"> ${msg} </div>\
+                                        ${privateDetail}
+                                    </div>\
+                                </div>\
+                            </div>\
+                            <div class="timestamp"> ${time} </div>\
+                        </div >`);
 
         }
         else {
-            $("#chatconversation").append('<div class="chat-message-group local"> \
-                                                <div class= "chatmessage-wrapper" >\
-                                                        <div class="chatmessage ">\
-                                                            <div class="replywrapper">\
-                                                                <div class="messagecontent">\
-                                                                    <div class="usermessage">' + sms + '</div>\
-                                                                </div>\
-                                                            </div>\
-                                                        </div>\
-                                                        <div class="timestamp">'+ time + '</div>\
-                                                    </div >\
-                                                </div>');
+            $("#chatconversation").append(
+                `<div class="chat-message-group local"> \
+                    <div class= "chatmessage-wrapper" >\
+                        <div class="chatmessage ${privateClass}">\
+                            <div class="replywrapper">\
+                                <div class="messagecontent">\
+                                    <div class="usermessage"> ${msg} </div>\
+                                    ${privateDetail}
+                                </div>\
+                            </div>\
+                        </div>\
+                        <div class="timestamp"> ${time} </div>\
+                    </div >\
+                </div>`);
         }
 
         this.scrollToBottom();
-        this.props.sendChat(sms);
+
+        if (this.isPrivate) {
+            this.props.sendPrivateChat(this.privateSenderId, msg);
+        } else {
+            this.props.sendChat(msg);
+        }
+        
     }
 
     //chat
-    receiveMessage(username: string, message: string, timestamp: string) {
+    receiveMessage(id: string, username: string, message: string, isPrivate: boolean = false) {
         //update unread count
         if (!this.opened) {
             this.unreadCount++;
@@ -180,12 +219,23 @@ export class ChattingPanel {
         const emoMessage = this.emonameToEmoicon(message);
         const nameColor = this.getNameColor(username);
 
-        $("#chatconversation").append(`<div class="chat-message-group remote"> \
+        const privateClass = isPrivate ? "private" : "";
+        let replyElem = "";
+        if (isPrivate) {
+            replyElem = `
+                <span class="jitsi-icon" jitsi-id="${id}" jitsi-name="${username}">
+                    <svg height="22" width="22" viewBox="0 0 36 36">
+                        <path d="M30,29a1,1,0,0,1-.81-.41l-2.12-2.92A18.66,18.66,0,0,0,15,18.25V22a1,1,0,0,1-1.6.8l-12-9a1,1,0,0,1,0-1.6l12-9A1,1,0,0,1,15,4V8.24A19,19,0,0,1,31,27v1a1,1,0,0,1-.69.95A1.12,1.12,0,0,1,30,29ZM14,16.11h.1A20.68,20.68,0,0,1,28.69,24.5l.16.21a17,17,0,0,0-15-14.6,1,1,0,0,1-.89-1V6L3.67,13,13,20V17.11a1,1,0,0,1,.33-.74A1,1,0,0,1,14,16.11Z"></path>
+                    </svg>
+                </span>`;
+        }
+
+        const $chatitem = $(`<div class="chat-message-group remote"> \
         <div class= "chatmessage-wrapper" >\
-                <div class="chatmessage ">\
+                <div class="chatmessage ${privateClass}">\
                     <div class="replywrapper">\
                         <div class="messagecontent">\
-                            <div class="display-name" style="color:${nameColor}">`+ username + '</div>\
+                            <div class="display-name" style="color:${nameColor}">` + username + replyElem + '</div>\
                             <div class="usermessage">' + emoMessage + '</div>\
                         </div>\
                     </div>\
@@ -193,7 +243,23 @@ export class ChattingPanel {
                 <div class="timestamp">'+ this.getCurTime() + '</div>\
             </div >\
         </div>');
+
+        $("#chatconversation").append($chatitem);
+        if (isPrivate) {
+            const _this = this;
+            $chatitem.find(".jitsi-icon").click(
+                function (e) {
+                    const id = $(this).attr("jitsi-id");
+                    const name = $(this).attr("jitsi-name");
+                    _this.setPrivateState(id, name);
+                }
+            );
+        }
+
         this.scrollToBottom();
+
+        if (isPrivate)
+            this.setPrivateState(id, username);
     }
 
     private scrollToBottom() {
@@ -283,6 +349,20 @@ export class ChattingPanel {
         this.nameColorMap.set(name, randomColor);
 
         return randomColor;
+    }
+
+    setPrivateState(jitsiId: string, name: string) {
+        this.isPrivate = true;
+        this.privateSenderId = jitsiId;
+        this.privateSenderName = name;
+        this.privatePanel.style.display = "flex";
+        this.privateLabelElement.innerHTML = "Private message to " + name;
+    }
+
+    clearPrivateState() {
+        this.isPrivate = false;
+        this.privateSenderId = null;
+        this.privatePanel.style.display = "none";
     }
 
 }

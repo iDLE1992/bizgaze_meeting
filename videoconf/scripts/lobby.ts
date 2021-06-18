@@ -3,6 +3,7 @@ import { MediaType } from "./enum/MediaType"
 import { stripHTMLTags } from "./util/snippet"
 import { BGMeeting } from "./model/BGMeeting";
 import { ParticipantType } from "./enum/ParticipantType";
+import { MeetingType } from "./enum/MeetingType";
 
 declare global {
     interface Window {
@@ -17,12 +18,13 @@ class LobbySeetings {
 
 export class Lobby {
     JitsiMeetJS = window.JitsiMeetJS;
+
     videoPreviewElem: HTMLElement;
     audioPreviewElem: HTMLElement;
 
-    cameraListElem: HTMLElement;
-    micListElem: HTMLElement;
-    speakerListElem: HTMLElement;
+    cameraListElem: HTMLInputElement;
+    micListElem: HTMLInputElement;
+    speakerListElem: HTMLInputElement;
 
     videoMuteElem: HTMLInputElement;
     audioMuteElem: HTMLInputElement;
@@ -44,14 +46,16 @@ export class Lobby {
     conferenceId: number = window.conferenceId;
     userId: string = window.userId;
 
+    localVideoTrack: JitsiTrack = null;
+    localAudioTrack: JitsiTrack = null;
 
     constructor() {
         this.videoPreviewElem = document.getElementById("camera-preview");
         this.audioPreviewElem = document.getElementById("mic-preview");
 
-        this.cameraListElem = document.getElementById("camera-list");
-        this.micListElem = document.getElementById("mic-list");
-        this.speakerListElem = document.getElementById("speaker-list");
+        this.cameraListElem = document.getElementById("camera-list") as HTMLInputElement;
+        this.micListElem = document.getElementById("mic-list") as HTMLInputElement;
+        this.speakerListElem = document.getElementById("speaker-list") as HTMLInputElement;
 
         this.videoMuteElem = document.getElementById("videoMute") as HTMLInputElement;
         this.audioMuteElem = document.getElementById("audioMute") as HTMLInputElement;
@@ -73,8 +77,10 @@ export class Lobby {
             this.refreshDeviceList();
 
             $(this.startSessionButton).prop('disabled', true);
-            this.videoMuteElem.checked = true;
-            this.audioMuteElem.checked = true;
+            this.videoMuteElem.checked = false;
+            this.audioMuteElem.checked = false;
+            this.videoMuteElem.disabled = true;
+            this.audioMuteElem.disabled = true;
 
             $.ajax({
                 url: "/api/Meeting/" + this.conferenceId,
@@ -109,6 +115,12 @@ export class Lobby {
         $(window).resize(() => {
             this.resizeCameraView();
         });
+        $(this.videoMuteElem).on('change', function () {
+            _this.onEnableVideo(this.checked);
+        });
+        $(this.audioMuteElem).on('change', function () {
+            _this.onEnableAudio(this.checked);
+        });
     }
 
     refreshDeviceList() {
@@ -140,15 +152,46 @@ export class Lobby {
 
         this.createLocalTracks(this.activeCameraDeviceId, this.activeMicDeviceId)
             .then((tracks: JitsiTrack[]) => {
-                tracks.forEach(t => {
-                    if (t.getType() === MediaType.VIDEO) {
-                        t.attach(this.videoPreviewElem);
-                    } else if (t.getType() === MediaType.AUDIO) {
-                        t.attach(this.audioPreviewElem);
-                    }
-                });
+                this.initOnTracks(tracks);
             });
     }
+
+    initOnTracks(tracks: JitsiTrack[]) {
+        tracks.forEach(t => {
+            if (t.getType() === MediaType.VIDEO) {
+                this.localVideoTrack = t;
+                t.attach(this.videoPreviewElem);
+                this.showCamera(true);
+            } else if (t.getType() === MediaType.AUDIO) {
+                this.localAudioTrack = t;
+                t.attach(this.audioPreviewElem);
+            }
+        });
+
+
+        if (this.activeCameraDeviceId === null) {
+            this.showCamera(false);
+            this.videoMuteElem.disabled = true;
+            this.videoMuteElem.checked = false;
+            this.cameraListElem.disabled = true;
+        } else {
+            this.showCamera(true);
+            this.videoMuteElem.disabled = false;
+            this.videoMuteElem.checked = true;
+            this.cameraListElem.disabled = false;
+        }
+
+        if (this.activeMicDeviceId === null) {
+            this.audioMuteElem.disabled = true;
+            this.audioMuteElem.checked = false;
+            this.micListElem.disabled = true;
+        } else {
+            this.audioMuteElem.disabled = false;
+            this.audioMuteElem.checked = true;
+            this.micListElem.disabled = false;
+        }
+    }
+
 
     clearDOMElement(elem: HTMLElement) {
         while (elem.firstChild) {
@@ -217,11 +260,15 @@ export class Lobby {
 
     onCameraChanged(cameraDeviceId: string) {
         this.activeCameraDeviceId = cameraDeviceId;
+
+        this.removeVideoTrack();
         this.createLocalTracks(this.activeCameraDeviceId, null)
             .then((tracks: JitsiTrack[]) => {
                 tracks.forEach(t => {
                     if (t.getType() === MediaType.VIDEO) {
+                        this.localVideoTrack = t;
                         t.attach(this.videoPreviewElem);
+                        this.showCamera(true);
                     }
                 });
             });
@@ -229,14 +276,31 @@ export class Lobby {
 
     onMicChanged(micDeviceId: string) {
         this.activeMicDeviceId = micDeviceId;
+
+        this.removeAudioTrack();
         this.createLocalTracks(null, this.activeMicDeviceId)
             .then((tracks: JitsiTrack[]) => {
                 tracks.forEach(t => {
                     if (t.getType() === MediaType.AUDIO) {
+                        this.localAudioTrack = t;
                         t.attach(this.audioPreviewElem);
                     }
                 });
             });
+    }
+
+    removeVideoTrack() {
+        if (this.localVideoTrack) {
+            this.localVideoTrack.dispose();
+            this.localVideoTrack = null;
+        }
+    }
+
+    removeAudioTrack() {
+        if (this.localAudioTrack) {
+            this.localAudioTrack.dispose();
+            this.localAudioTrack = null;
+        }
     }
 
     onSpeakerChanged(speakerDeviceId: string) {
@@ -246,11 +310,44 @@ export class Lobby {
         };
     }
 
+
+    onEnableVideo(enable: boolean) {
+        if (enable) {
+            this.onCameraChanged(this.activeCameraDeviceId);
+            this.cameraListElem.disabled = false;
+        } else {
+            this.removeVideoTrack();
+            this.showCamera(false);
+            this.cameraListElem.disabled = true;
+        }
+    }
+
+    onEnableAudio(enable: boolean) {
+        if (enable) {
+            this.onMicChanged(this.activeMicDeviceId);
+            this.micListElem.disabled = false;
+        } else {
+            this.removeAudioTrack();
+            this.micListElem.disabled = true;
+        }
+    }
+
+    showCamera(show: boolean) {
+        if (show) {
+            $(this.videoPreviewElem).removeClass("d-none");
+            $("#no-camera-icon").addClass("d-none");
+        } else {
+            $(this.videoPreviewElem).addClass("d-none");
+            $("#no-camera-icon").removeClass("d-none");
+        }
+    }
+
     resizeCameraView() {
-        const w = $("#camera-preview").width();
+        const $container = $("#camera-preview-container");
+        const w = $container.width();
         const h = w * 9 / 16;
-        $("#camera-preview").css("height", h);
-        $("#camera-preview").css("min-height", h);
+        $container.css("height", h);
+        $container.css("min-height", h);
     }
 
     startSession() {
@@ -267,7 +364,22 @@ export class Lobby {
         $("form").submit();
     }
 
+    validateUser(meeting: BGMeeting): boolean {
+        if (this.isAnonymousUser()) {
+            return meeting.ConferenceType === MeetingType.Open;
+        }
+        else {
+            const user = meeting.Participants.filter(p => p.ParticipantId.toString() === this.userId);
+            return user.length > 0;
+        }
+    }
+
     onMeetingResult(meeting: BGMeeting) {
+        if (!this.validateUser(meeting)) {
+            location.href = "/noaccess";
+            return;
+        }
+
         const hosts = meeting.Participants.filter(p => p.ParticipantType === ParticipantType.Host);
         if (hosts.length === 1)
             this.setOrganizerName(hosts[0].ParticipantName);
@@ -295,6 +407,8 @@ export class Lobby {
         this.hidePreloader();
     }
 
+
+
     onMeetingErrorResult(err: string) {
         location.href = "/";
     }
@@ -302,7 +416,6 @@ export class Lobby {
     isAnonymousUser() {
         return !this.userId || !parseInt(this.userId);
     }
-
 
     /***********************************************************************************
     

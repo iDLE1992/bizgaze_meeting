@@ -12,7 +12,7 @@ body {
     margin: 0;
     width: 100%;
     height: 100%;
-    font-size: 12px!important;
+    font-size: 12px !important;
     font-weight: 400;
     overflow: hidden;
     color: #f1f1f1;
@@ -47,7 +47,7 @@ ul {
     margin: 0;
 }
 
-.container{
+.container {
     height: 100%;
     padding: 40px 0px;
 }
@@ -67,7 +67,7 @@ svg {
     /*vertical-align: revert;*/
 }
 
-main{
+main {
     height: 100%;
 }
 
@@ -93,7 +93,7 @@ video {
 }
 
 #video-panel {
-    width : 100%;
+    width: 100%;
     align-content: center;
     align-items: center;
     box-sizing: border-box;
@@ -112,8 +112,8 @@ video {
 }
 
 .statusIcons img {
-    width:20px;
-    height:20px;
+    width: 20px;
+    height: 20px;
 }
 
 .mat-button, .mat-icon-button, .mat-stroked-button {
@@ -153,7 +153,7 @@ video {
     flex-shrink: 0;
     line-height: 40px;
     border-radius: 50%;
-    background:none;
+    background: none;
 }
 
 /*button:active {
@@ -162,7 +162,7 @@ video {
     background: gray;
 }*/
 
-button:focus{
+button:focus {
     outline: none;
 }
 
@@ -171,14 +171,13 @@ button:focus{
     height: 100%;
     border: solid 1px;
     background: black;
-    border-radius : 5px;
-    margin:auto;
+    border-radius: 5px;
+    margin: auto;
 }
 
-.statusIcons{
+.statusIcons {
     bottom: 20px;
     left: 20px;
-    
     height: -webkit-fit-content;
     height: -moz-fit-content;
     height: fit-content;
@@ -197,7 +196,7 @@ button:focus{
 }
 
 .mic-disable {
-    background:red;
+    background: red;
 }
 
 .camera-disable {
@@ -224,15 +223,15 @@ button:focus{
     margin: 5px;
 }
 
-.mic-button img {
-    padding: 0px;
-    min-width: 320px;
-    width: 320px;
-    min-height: 180px;
-    height: 180px;
-    width: 20px;
-    height: 20px;
-}
+    .mic-button img {
+        padding: 0px;
+        min-width: 320px;
+        width: 320px;
+        min-height: 180px;
+        height: 180px;
+        width: 20px;
+        height: 20px;
+    }
 
 
 .height-100 {
@@ -257,7 +256,7 @@ button:focus{
 }
 
 .row-12 {
-    height : 100%;
+    height: 100%;
 }
 
 .videocontainer {
@@ -291,15 +290,16 @@ button:focus{
     width: 100%;
 }
 
-.new-toolbox.visible {
-    bottom: 0;
-}
+    .new-toolbox.visible {
+        bottom: 0;
+    }
 
 @media (min-width: 581px) {
     .new-toolbox.shift-right {
         margin-left: 315px;
         width: calc(100% - 315px);
     }
+
     .shift-right#video-panel {
         margin-left: 315px;
         width: calc(100% - 315px);
@@ -333,13 +333,13 @@ button:focus{
     text-align: center;
 }
 
-.toolbox-content-items > div {
-    margin-left: 8px;
-}
+    .toolbox-content-items > div {
+        margin-left: 8px;
+    }
 
-.toolbox-content-items > div:first-child {
-    margin-left: 0;
-}
+        .toolbox-content-items > div:first-child {
+            margin-left: 0;
+        }
 
 .toolbox-button {
     color: #fff;
@@ -349,9 +349,9 @@ button:focus{
     text-align: center;
 }
 
-.toolbox-button:focus {
-    outline:none;
-}
+    .toolbox-button:focus {
+        outline: none;
+    }
 
 .toolbox-icon {
     display: flex;
@@ -363,14 +363,14 @@ button:focus{
     width: 48px;
 }
 
-.toolbox-icon:hover {
-    background: rgba(255,255,255,.2)
-}
+    .toolbox-icon:hover {
+        background: rgba(255,255,255,.2)
+    }
 
 
-.toolbox-icon.toggled {
-    background: rgba(255,255,255,.15);
-}
+    .toolbox-icon.toggled {
+        background: rgba(255,255,255,.15);
+    }
 
 .jitsi-icon svg {
     fill: #fff;
@@ -384,13 +384,13 @@ button:focus{
     position: relative;
 }
 
-.settings-button-container .toolbox-icon {
-    align-items: center;
-    border-radius: 3px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-}
+    .settings-button-container .toolbox-icon {
+        align-items: center;
+        border-radius: 3px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+    }
 
 .audio-preview {
     display: inline-block;
@@ -417,24 +417,24 @@ button:focus{
     /*border-bottom: 1px dotted black;*/
 }
 
-.ctooltip .ctooltiptext {
-    visibility: hidden;
-    width: 120px;
-    background-color: rgb(27, 38, 56);
-    text-align: center;
-    border-radius: 4px;
-    padding: 0px 0;
-    position: absolute;
-    z-index: 1;
-    bottom: 125%;
-    left: 50%;
-    margin-left: -60px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
+    .ctooltip .ctooltiptext {
+        visibility: hidden;
+        width: 120px;
+        background-color: rgb(27, 38, 56);
+        text-align: center;
+        border-radius: 4px;
+        padding: 0px 0;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
 
-.ctooltip .ctooltiptext::after {
-   /* content: "";
+        .ctooltip .ctooltiptext::after {
+            /* content: "";
     position: absolute;
     top: 100%;
     left: 50%;
@@ -442,7 +442,7 @@ button:focus{
     border-width: 5px;
     border-style: solid;
     border-color: #555 transparent transparent transparent;*/
-}
+        }
 
 .ctooltiptext {
     visibility: visible;
@@ -491,15 +491,15 @@ button:focus{
     padding: 0 5px 0 5px;
 }
 
-.videocontainer__toolbar *, .videocontainer__toptoolbar * {
-    pointer-events: auto;
-}
+    .videocontainer__toolbar *, .videocontainer__toptoolbar * {
+        pointer-events: auto;
+    }
 
-.videocontainer__toolbar .indicator-container, .videocontainer__toptoolbar .indicator-container {
-    display: inline-block;
-    float: left;
-    pointer-events: all;
-}
+    .videocontainer__toolbar .indicator-container, .videocontainer__toptoolbar .indicator-container {
+        display: inline-block;
+        float: left;
+        pointer-events: all;
+    }
 
 .videocontainer .toolbar-icon {
     font-size: 8pt;
@@ -527,7 +527,7 @@ button:focus{
 }
 
 .popup-menu {
-    visibility : hidden;
+    visibility: hidden;
     background: rgb(40, 52, 71);
     border-radius: 3px;
     box-sizing: content-box;
@@ -539,25 +539,25 @@ button:focus{
     box-shadow: rgb(13 20 36 / 85%) 0px 4px 8px -2px, rgb(13 20 36 / 81%) 0px 0px 1px;
 }
 
-.popup-menu .visible {
-    visibility : visible;
-}
+    .popup-menu .visible {
+        visibility: visible;
+    }
 
     .popup-menu .label {
         white-space: nowrap;
     }
 
 .remotevideomenu {
-    height:35px;
+    height: 35px;
 }
 
-.remotevideomenu > div:nth-child(2) {
-    background: #242528;
-    max-height: calc(100vh - calc(48px + 24px) - 46px);
-    margin-bottom: 4px;
-    padding: 0;
-    overflow-y: auto;
-}
+    .remotevideomenu > div:nth-child(2) {
+        background: #242528;
+        max-height: calc(100vh - calc(48px + 24px) - 46px);
+        margin-bottom: 4px;
+        padding: 0;
+        overflow-y: auto;
+    }
 
 
 .overflow-menu {
@@ -581,13 +581,13 @@ button:focus{
     box-sizing: border-box;
 }
 
-.overflow-menu-item:hover {
-    background: #36383C;
-}
+    .overflow-menu-item:hover {
+        background: #36383C;
+    }
 
-.overflow-menu-item:focus {
-    outline:none;
-}
+    .overflow-menu-item:focus {
+        outline: none;
+    }
 
 .overflow-menu-item-icon {
     margin-right: 16px;
@@ -659,7 +659,7 @@ button:focus{
 .avatar-container {
     /*max-width: 60px;
     max-height: 60px;*/
-    visibility : hidden;
+    visibility: hidden;
     max-height: initial;
     max-width: initial;
     top: 50%;
@@ -677,9 +677,9 @@ button:focus{
     overflow: hidden;
 }
 
-.avatar-container .visible{
-    visibility : visible;
-}
+    .avatar-container .visible {
+        visibility: visible;
+    }
 
 .display-avatar-only .avatar-container {
     visibility: visible;
@@ -726,13 +726,13 @@ button:focus{
     z-index: 200;
 }
 
-#sideToolbarContainer.slideInExt {
-    left: 0;
-}
+    #sideToolbarContainer.slideInExt {
+        left: 0;
+    }
 
-#sideToolbarContainer.invisible{
-    display:none;
-}
+    #sideToolbarContainer.invisible {
+        display: none;
+    }
 
 .chat-header {
     height: 70px;
@@ -754,6 +754,26 @@ button:focus{
     padding: 0 16px 16px;
 }
 
+#chat-recipient {
+    align-items: center;
+    background-color: #82323a;
+    display: flex;
+    flex-direction: row;
+    font-weight: 100;
+    padding: 10px;
+}
+
+#chat-recipient span {
+    color: #fff;
+    display: flex;
+    flex: 1;
+}
+
+#chat-recipient div svg {
+    cursor: pointer;
+    fill: #fff;
+}
+
 .smileys-panel {
     bottom: 100%;
     box-sizing: border-box;
@@ -770,15 +790,15 @@ button:focus{
 
 
 
-.smileys-panel.show-smileys {
-    max-height: 500%;
-}
+    .smileys-panel.show-smileys {
+        max-height: 500%;
+    }
 
-.smileys-panel #smileysContainer {
-    background-color: #131519;
-    border-top: 1px solid #a4b8d1;
-    display: -webkit-inline-box;
-}
+    .smileys-panel #smileysContainer {
+        background-color: #131519;
+        border-top: 1px solid #a4b8d1;
+        display: -webkit-inline-box;
+    }
 
 .smileyContainer {
     width: 40px;
@@ -796,7 +816,7 @@ button:focus{
 }
 
 #smileysContainer .smiley {
-    font-size: 20pt;    
+    font-size: 20pt;
 }
 
 .usrmsg-form {
@@ -846,9 +866,9 @@ button:focus{
     flex-direction: column;
 }
 
-.chat-message-group.local {
-    align-items: flex-end;
-}
+    .chat-message-group.local {
+        align-items: flex-end;
+    }
 
 #chatconversation > :first-child {
     margin-top: auto;
@@ -891,6 +911,19 @@ button:focus{
     margin: 8px;
     max-width: 100%;
     overflow: hidden;
+}
+
+.chat-message-group .chatmessage.private,
+.chat-message-group.local .chatmessage.private {
+    background-color: #82323a;
+}
+
+.chatmessage.private svg:hover {
+    fill: #ff0000;
+}
+
+.chatmessage.private svg:active {
+    fill: #9f1616;
 }
 
 .sideToolbarContainer .display-name {
@@ -971,7 +1004,7 @@ button:focus{
     background: rgba(255,255,255,.15);
 }
 
-.smileyContainer:hover{
+.smileyContainer:hover {
     cursor: pointer;
 }
 
@@ -1069,20 +1102,23 @@ button:focus{
     color: lightgray;
 }
 
-.setting-dialog .modal-footer, .setting-dialog .modal-header {
-    display: none;
-}
-.setting-dialog .modal-body {
-    padding: 0px;
-}
-.setting-dialog #camera-preview {
-    inset: 0;
-    position: absolute;
-    object-fit: fill;
-}
-.setting-dialog .video-container {
-    background: #5c5c5c;
-}
+    .setting-dialog .modal-footer, .setting-dialog .modal-header {
+        display: none;
+    }
+
+    .setting-dialog .modal-body {
+        padding: 0px;
+    }
+
+    .setting-dialog #camera-preview {
+        inset: 0;
+        position: absolute;
+        object-fit: fill;
+    }
+
+    .setting-dialog .video-container {
+        background: #5c5c5c;
+    }
 
 
     .setting-dialog .device-list-container {
@@ -1096,7 +1132,9 @@ button:focus{
         max-width: 768px;
         min-width: 768px;
     }
-}@media (max-width: 767px) {
+}
+
+@media (max-width: 767px) {
     .setting-dialog .modal-dialog {
         max-width: 300px;
         min-width: 300px;
@@ -1108,45 +1146,45 @@ button:focus{
     opacity: 0.8;
 }
 
-    .setting-dialog .rounded-left {
-        border-top-left-radius: 0.65rem !important;
-        border-bottom-left-radius: 0.65rem !important;
+.setting-dialog .rounded-left {
+    border-top-left-radius: 0.65rem !important;
+    border-bottom-left-radius: 0.65rem !important;
+}
+
+.setting-dialog .rounded-right {
+    border-top-right-radius: 0.65rem !important;
+    border-bottom-right-radius: 0.65rem !important;
+}
+
+.setting-dialog .btn.btn-primary {
+    padding-top: calc(0.5rem + 1px) !important;
+    padding-bottom: calc(0.5rem + 1px) !important;
+    background: #00a9e8;
+}
+
+    .setting-dialog .btn.btn-primary:hover {
+        background: #137da5;
     }
 
-    .setting-dialog .rounded-right {
-        border-top-right-radius: 0.65rem !important;
-        border-bottom-right-radius: 0.65rem !important;
+    .setting-dialog .btn.btn-primary:active, .setting-dialog .btn.btn-primary:focus {
+        background: #196582;
     }
 
-    .setting-dialog .btn.btn-primary {
-        padding-top: calc(0.5rem + 1px) !important;
-        padding-bottom: calc(0.5rem + 1px) !important;
-        background: #00a9e8;
-    }
+.setting-dialog h1, .setting-dialog label {
+    font-weight: 300;
+}
 
-        .setting-dialog .btn.btn-primary:hover {
-            background: #137da5;
-        }
+.select2-search {
+    display: none;
+}
 
-        .setting-dialog .btn.btn-primary:active, .setting-dialog .btn.btn-primary:focus {
-            background: #196582;
-        }
+.select2-container--bootstrap5 .select2-dropdown {
+    padding: 0px;
+}
 
-    .setting-dialog h1, .setting-dialog label {
-        font-weight: 300;
-    }
-
-    .select2-search {
-        display: none;
-    }
-
-    .select2-container--bootstrap5 .select2-dropdown {
-        padding: 0px;
-    }
-
-    .select2-container--bootstrap5 .select2-selection__clear {
-        display: none;
-    }
+.select2-container--bootstrap5 .select2-selection__clear {
+    display: none;
+}
 
 .chat-badge.badge.badge-circle {
     position: absolute;
@@ -1158,12 +1196,16 @@ button:focus{
     height: 1.3rem;
 }
 
+
+
+
 #open-participants-toggle {
     background-color: #131519;
 }
 
 #participants-list {
     background: transparent;
+    z-index: 1000;
 }
 
     #participants-list .card {
@@ -1212,14 +1254,16 @@ button:focus{
     .jitsi-participant .name {
         font-size: 1.3em;
     }
+
 #participants-list-body {
     padding-right: 1em;
 }
 
-.jitsi-participant .jitsi-icon svg:hover {
+.is-host .jitsi-participant .jitsi-icon svg:hover {
     fill: #ff0000;
 }
-.jitsi-participant .jitsi-icon svg:active {
+
+.is-host .jitsi-participant .jitsi-icon svg:active {
     fill: #9f1616;
 }
 
@@ -1227,6 +1271,16 @@ button:focus{
     background-color: transparent;
 }
 
-#participants-list-close rect {
-    fill: #A1A5B7;
+    #participants-list-close rect {
+        fill: #A1A5B7;
+    }
+
+.smiley-button svg:hover,
+.send-button svg:hover {
+    fill: #ff0000;
+}
+
+.smiley-button svg:active,
+.send-button svg:active {
+    fill: #9f1616;
 }
