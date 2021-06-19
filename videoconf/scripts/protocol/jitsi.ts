@@ -11,6 +11,8 @@ export enum JitsiCommand {
     ALLOW_MIC = "allow_audio",
     INIT_MEDIA_POLICY = "init_media_policy",
     ASK_RECORDING = "ask-recording",
+    FILE_META = "file_meta",
+    FILE_SLICE = "file_slice",
 };
 
 

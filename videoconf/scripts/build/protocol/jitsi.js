@@ -12,6 +12,8 @@ var JitsiCommand;
     JitsiCommand["ALLOW_MIC"] = "allow_audio";
     JitsiCommand["INIT_MEDIA_POLICY"] = "init_media_policy";
     JitsiCommand["ASK_RECORDING"] = "ask-recording";
+    JitsiCommand["FILE_META"] = "file_meta";
+    JitsiCommand["FILE_SLICE"] = "file_slice";
 })(JitsiCommand = exports.JitsiCommand || (exports.JitsiCommand = {}));
 ;
 var JitsiPrivateCommand;

@@ -6,7 +6,11 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChattingPanel = exports.ChattingPanelProps = void 0;
+var FileReceiver_1 = require("../file/FileReceiver");
+var FileSender_1 = require("../file/FileSender");
+var random_1 = require("../util/random");
 var snippet_1 = require("../util/snippet");
+var TimeUtil_1 = require("../util/TimeUtil");
 var ChattingPanelProps = /** @class */ (function () {
     function ChattingPanelProps() {
     }
@@ -19,6 +23,8 @@ var ChattingPanel = /** @class */ (function () {
         this.isPrivate = false;
         this.nameColors = [];
         this.remainColors = [];
+        this.fileSendingPool = new Map();
+        this.fileReceivingPool = new Map();
     }
     ChattingPanel.prototype.init = function (props) {
         this.props = props;
@@ -26,6 +32,9 @@ var ChattingPanel = /** @class */ (function () {
         this.closeButton = document.querySelector(".chat-close-button");
         this.inputField = document.querySelector("#chat-input #usermsg");
         this.sendButton = document.querySelector(".send-button");
+        this.filesendButton = document.querySelector(".file-share-button");
+        this.fileElement = document.getElementById("file-selector");
+        this.fileSendingPanel = document.getElementById("file-sending");
         this.privatePanel = document.querySelector("#chat-recipient");
         this.privateLabelElement = $(this.privatePanel).find(">span")[0];
         this.privateCloseElement = $(this.privatePanel).find(">div")[0];
@@ -86,6 +95,12 @@ var ChattingPanel = /** @class */ (function () {
         $(this.privateCloseElement).click(function (_) {
             _this_1.clearPrivateState();
         });
+        $(this.filesendButton).click(function (_) {
+            $(_this_1.fileElement).click();
+        });
+        $(this.fileElement).on("change", function (_) {
+            _this_1.sendFile();
+        });
     };
     ChattingPanel.prototype.open = function (opened) {
         if (opened) {
@@ -122,7 +137,7 @@ var ChattingPanel = /** @class */ (function () {
         if (!msg)
             return;
         msg = this.emonameToEmoicon(msg);
-        var time = this.getCurTime();
+        var time = TimeUtil_1.getCurTime();
         var privateClass = this.isPrivate ? "private" : "";
         var privateDetail = "";
         if (this.isPrivate) {
@@ -166,7 +181,7 @@ var ChattingPanel = /** @class */ (function () {
                         </div>\
                     </div>\
                 </div>\
-                <div class="timestamp">' + this.getCurTime() + '</div>\
+                <div class="timestamp">' + TimeUtil_1.getCurTime() + '</div>\
             </div >\
         </div>');
         $("#chatconversation").append($chatitem);
@@ -190,15 +205,6 @@ var ChattingPanel = /** @class */ (function () {
         var limit = $('#chatconversation').height();
         var pos = overheight - limit;
         $("#chatconversation").animate({ scrollTop: pos }, 200);
-    };
-    ChattingPanel.prototype.getCurTime = function () {
-        var date = new Date();
-        var h = date.getHours();
-        var m = date.getMinutes();
-        var m_2 = ("0" + m).slice(-2);
-        var h_2 = ("0" + h).slice(-2);
-        var time = h_2 + ":" + m_2;
-        return time;
     };
     ChattingPanel.prototype.idToEmoname = function (id) {
         if (id == 'smiley1')
@@ -289,6 +295,43 @@ var ChattingPanel = /** @class */ (function () {
         this.isPrivate = false;
         this.privateSenderId = null;
         this.privatePanel.style.display = "none";
+    };
+    ChattingPanel.prototype.sendFile = function () {
+        var props = new FileSender_1.FileSenderProps();
+        props.fileElement = this.fileElement;
+        props.fileSendingPanel = this.fileSendingPanel;
+        props.sessionId = random_1.randomSessonId();
+        props.onError = this.props.onFileSendErrror;
+        props.onFinished = this.props.onFileSendFinished;
+        props.sendFileData = this.props.sendFileData;
+        props.sendFileMeta = this.props.sendFileMeta;
+        var fileSender = new FileSender_1.FileSender(props);
+        fileSender.sendFile();
+    };
+    ChattingPanel.prototype.onFileMeta = function (sessionId, meta, senderId, senderName) {
+        var props = new FileReceiver_1.FileReceiverProps();
+        props.meta = meta;
+        props.senderId = senderId;
+        props.senderName = senderName;
+        props.onFinished = this.onFileReceiveFinished.bind(this);
+        props.onError = this.onFileReceiveError.bind(this);
+        props.addChatItem = this.receiveMessage.bind(this);
+        var receiver = new FileReceiver_1.FileReceiver(props);
+        this.fileReceivingPool.set(sessionId, receiver);
+        receiver.show();
+    };
+    ChattingPanel.prototype.onFileData = function (sessionId, data) {
+        var receiver = this.fileReceivingPool.get(sessionId);
+        if (receiver)
+            receiver.readFileData(data);
+    };
+    ChattingPanel.prototype.onFileReceiveError = function (sessionId, filename, message) {
+        this.fileReceivingPool.delete(sessionId);
+        this.props.onFileReceiveError(filename, message);
+    };
+    ChattingPanel.prototype.onFileReceiveFinished = function (sessionId, filename, message) {
+        this.fileReceivingPool.delete(sessionId);
+        this.props.onFileReceiveFinished(filename, message);
     };
     return ChattingPanel;
 }());

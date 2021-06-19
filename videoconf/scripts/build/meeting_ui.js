@@ -80,6 +80,12 @@ var MeetingUI = /** @class */ (function () {
         props.openCallback = this.refreshCardViews.bind(this);
         props.sendChat = this.meeting.sendChatMessage.bind(this.meeting);
         props.sendPrivateChat = this.meeting.sendPrivateChatMessage.bind(this.meeting);
+        props.sendFileMeta = this.meeting.sendFileMeta.bind(this.meeting);
+        props.sendFileData = this.meeting.sendFileData.bind(this.meeting);
+        props.onFileSendErrror = this.onFileSendError.bind(this);
+        props.onFileSendFinished = this.onFileSendFinished.bind(this);
+        props.onFileReceiveError = this.onFileReceiveError.bind(this);
+        props.onFileReceiveFinished = this.onFileReceiveFinished.bind(this);
         this.chattingPanel.init(props);
         this.participantsListPanel = new ParticipantListPanel_1.ParticipantListPanel();
         var lProps = new ParticipantListPanel_1.ParticipantListPanelProps();
@@ -668,9 +674,23 @@ var MeetingUI = /** @class */ (function () {
     MeetingUI.prototype.showParticipantListButton = function (show) {
         $("#open-participants-toggle").css("visibility", show ? "visible" : "hidden");
     };
+    //file send
+    MeetingUI.prototype.onFileSendError = function (filename, message) {
+        this.notification_warning(filename, message, NotificationType_1.NotificationType.FileTransfer);
+    };
+    MeetingUI.prototype.onFileSendFinished = function (filename, message) {
+        this.notification(filename, message, NotificationType_1.NotificationType.FileTransfer);
+    };
+    //file receive
+    MeetingUI.prototype.onFileReceiveError = function (filename, message) {
+        this.notification_warning(filename, message, NotificationType_1.NotificationType.FileReceive);
+    };
+    MeetingUI.prototype.onFileReceiveFinished = function (filename, message) {
+        this.notification(filename, message, NotificationType_1.NotificationType.FileReceive);
+    };
     MeetingUI.prototype.Log = function (message) {
         if ($("#logPanel").length <= 0) {
-            var logPanel = "<div id=\"logPanel\" style=\"position: fixed;width: 300px;height: 200px;background: black;top:0px;left: 0px;\n                                z-index: 100000;border-right: 1px dashed rebeccapurple;border-bottom: 1px dashed rebeccapurple;overflow-y:auto;\"></div>";
+            var logPanel = "<div id=\"logPanel\" style=\"position: fixed;width: 300px;height: 100px;background: black;top:0px;left: 0px;\n                                z-index: 100000;border-right: 1px dashed rebeccapurple;border-bottom: 1px dashed rebeccapurple;overflow-y:auto;\"></div>";
             $("body").append(logPanel);
         }
         var colors = ['blanchedalmond', 'hotpink', 'chartreuse', 'coral', 'gold', 'greenyellow', 'violet', 'wheat'];

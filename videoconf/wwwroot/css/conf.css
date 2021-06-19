@@ -754,6 +754,26 @@ button:focus {
     padding: 0 16px 16px;
 }
 
+.file-progress {
+    align-items: center;
+    font-weight: 100;
+    padding: 16px;
+}
+.file-progress .progress {
+    height: 4px;
+}
+
+.file-progress .fileinfo {
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.file-progress .fileinfo.failed {
+    text-decoration: line-through;
+    color: darkgray;
+}
+
 #chat-recipient {
     align-items: center;
     background-color: #82323a;
@@ -829,13 +849,12 @@ button:focus {
     align-items: center;
 }
 
-.send-button {
+.send-button, .file-share-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 40px;
-    width: 40px;
     border-radius: 3px;
+    margin-right: 4px;
 }
 
 .sideToolbarContainer * {
@@ -944,6 +963,10 @@ button:focus {
     font-size: 14px;
 }
 
+.chatmessage .usermessage .file-progress {
+    white-space: normal;
+}
+
 .timestamp {
     color: #757575;
 }
@@ -969,11 +992,12 @@ button:focus {
     box-shadow: none;
     color: #fff;
     font-size: 14px;
-    padding: 10px;
+    padding: 10px 0px 10px 10px;
     overflow-y: auto;
     resize: none;
     width: 100%;
-    word-break: break-word;
+    /*word-break: break-word;*/
+    line-break: anywhere;
 }
 
 .smiley-input {
@@ -1276,11 +1300,13 @@ button:focus {
     }
 
 .smiley-button svg:hover,
-.send-button svg:hover {
+.send-button svg:hover,
+.file-share-button svg:hover{
     fill: #ff0000;
 }
 
 .smiley-button svg:active,
-.send-button svg:active {
+.send-button svg:active,
+.file-share-button svg:active {
     fill: #9f1616;
 }

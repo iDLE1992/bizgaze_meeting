@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.random = exports.avatarName = exports.stripHTMLTags = void 0;
+exports.getCapacityLabel = exports.random = exports.avatarName = exports.stripHTMLTags = void 0;
 function stripHTMLTags(text) {
     return text.replace(/(<([^>]+)>)/gi, "");
 }
@@ -34,4 +34,17 @@ function avatarName(name) {
 exports.avatarName = avatarName;
 var random = function (min, max) { return Math.floor(Math.random() * (max - min)) + min; };
 exports.random = random;
+function getCapacityLabel(bytes) {
+    if (bytes < 1024)
+        return bytes + " bytes";
+    else if (bytes < 1024 * 1024) {
+        var kb = bytes / 1024;
+        return kb.toFixed(2) + " KB";
+    }
+    else {
+        var mb = bytes / (1024 * 1024);
+        return mb.toFixed(2) + " MB";
+    }
+}
+exports.getCapacityLabel = getCapacityLabel;
 //# sourceMappingURL=snippet.js.map

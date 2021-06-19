@@ -33,3 +33,15 @@ export function avatarName(name: string) {
 }
 
 export const random = (min: number, max: number) => Math.floor(Math.random() * (max - min)) + min;
+
+export function getCapacityLabel(bytes: number) : string {
+    if (bytes < 1024)
+        return `${bytes} bytes`;
+    else if (bytes < 1024 * 1024) {
+        const kb = bytes / 1024;
+        return `${kb.toFixed(2)} KB`;
+    } else {
+        const mb = bytes / (1024 * 1024);
+        return `${mb.toFixed(2)} MB`;
+    }
+}

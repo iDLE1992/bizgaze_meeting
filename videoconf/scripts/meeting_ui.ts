@@ -112,6 +112,12 @@ export class MeetingUI {
         props.openCallback = this.refreshCardViews.bind(this);
         props.sendChat = this.meeting.sendChatMessage.bind(this.meeting);
         props.sendPrivateChat = this.meeting.sendPrivateChatMessage.bind(this.meeting);
+        props.sendFileMeta = this.meeting.sendFileMeta.bind(this.meeting);
+        props.sendFileData = this.meeting.sendFileData.bind(this.meeting);
+        props.onFileSendErrror = this.onFileSendError.bind(this);
+        props.onFileSendFinished = this.onFileSendFinished.bind(this);
+        props.onFileReceiveError = this.onFileReceiveError.bind(this);
+        props.onFileReceiveFinished = this.onFileReceiveFinished.bind(this);
         this.chattingPanel.init(props);
 
         this.participantsListPanel = new ParticipantListPanel();
@@ -871,11 +877,28 @@ export class MeetingUI {
         $("#open-participants-toggle").css("visibility", show ? "visible" : "hidden");
     }
 
+    //file send
+    onFileSendError(filename: string, message: string) {
+        this.notification_warning(filename, message, NotificationType.FileTransfer);
+    }
+
+    onFileSendFinished(filename: string, message: string) {
+        this.notification(filename, message, NotificationType.FileTransfer);
+    }
+
+    //file receive
+    onFileReceiveError(filename: string, message: string) {
+        this.notification_warning(filename, message, NotificationType.FileReceive);
+    }
+
+    onFileReceiveFinished(filename: string, message: string) {
+        this.notification(filename, message, NotificationType.FileReceive);
+    }
 
 
     public Log(message: string) {
         if ($("#logPanel").length <= 0) {
-            const logPanel = `<div id="logPanel" style="position: fixed;width: 300px;height: 200px;background: black;top:0px;left: 0px;
+            const logPanel = `<div id="logPanel" style="position: fixed;width: 300px;height: 100px;background: black;top:0px;left: 0px;
                                 z-index: 100000;border-right: 1px dashed rebeccapurple;border-bottom: 1px dashed rebeccapurple;overflow-y:auto;"></div>`;
             $("body").append(logPanel);
         }

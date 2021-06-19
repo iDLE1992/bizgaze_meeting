@@ -18,6 +18,7 @@ import { JitsiCommand, JitsiPrivateCommand } from "./protocol/jitsi";
 import { NotificationType } from "./enum/NotificationType";
 import { JitsiCommandQueue, JitsiPrivateCommandQueue } from "./jitsi/JitsiCommandQueue";
 import { send } from "node:process";
+import { FileMeta } from "./file/FileMeta";
 
 declare global {
     interface Window {
@@ -90,8 +91,8 @@ export class BizGazeMeeting {
     jitsiConnection: any;
 
 
-    JitsiServerDomain = "idlests.com";
-    //JitsiServerDomain = "unimail.in";
+    //JitsiServerDomain = "idlests.com";
+    JitsiServerDomain = "unimail.in";
 
     localTracks: JitsiTrack[] = [];
 
@@ -162,7 +163,6 @@ export class BizGazeMeeting {
             this.jitsiRoom.leave().then(() => {
                 this.leaveBGConference();
             }).catch((error: any) => {
-                debugger;
                 this.leaveBGConference();
             });
         } else {
@@ -623,10 +623,12 @@ export class BizGazeMeeting {
 
     onJitsiConnectionFailed() {
         this.Log("Failed to connect Jitsi Server - " + this.JitsiServerDomain);
+        this.stop();
     }
 
     disconnectFromJitsiServer() {
         this.Log("Disconnected from Jitsi Server - " + this.JitsiServerDomain);
+        this.stop();
     }
 
     private joinJitsiConference() {
@@ -724,6 +726,12 @@ export class BizGazeMeeting {
         })
         this.jitsiRoom.addCommandListener(JitsiCommand.ASK_RECORDING, (param: JitsiCommandParam) => {
             this.onAskRecording(param);
+        })
+        this.jitsiRoom.addCommandListener(JitsiCommand.FILE_META, (param: JitsiCommandParam) => {
+            this.onFileMeta(param);
+        })
+        this.jitsiRoom.addCommandListener(JitsiCommand.FILE_SLICE, (param: JitsiCommandParam) => {
+            this.onFileData(param);
         })
 
         //set name
@@ -931,6 +939,10 @@ export class BizGazeMeeting {
      *
      * **************************************************************************
      */
+
+    //ATTENTION! attributes = {key1: not object, key2: not object, ...}
+                              //send as primitive type like boolean, string, number...
+                              //and decode when use value1, vaule2
     sendJitsiBroadcastCommand(type: JitsiCommand, value: any, attributes: any = null) {
         let param = new JitsiCommandParam();
         param.value = value;
@@ -978,6 +990,7 @@ export class BizGazeMeeting {
      *        ScreenShare
      *        Recording
      *        Chatting
+     *        File Sharing
      *        
      * **************************************************************************
      */
@@ -1130,11 +1143,8 @@ export class BizGazeMeeting {
             } else {
                 this.muteMyAudio(mute);
             }
-            
         }
     }
-
-
 
     private onMutedVideo(param: JitsiCommandParam) {
         const targetId = param.value;
@@ -1334,8 +1344,6 @@ export class BizGazeMeeting {
                     return;
                 }
 
-                debugger;
-
                 const cameraTrack: JitsiTrack = tracks[0];
                 this.onLocalTrackAdded([cameraTrack]);
                 this.screenSharing = false;
@@ -1373,6 +1381,58 @@ export class BizGazeMeeting {
         if (user) {
             this.ui.chattingPanel.receiveMessage(senderId, user.getDisplayName(), msg, true);
         }
+    }
+
+    /*file sharing*/
+    sendFileMeta(meta: FileMeta) {
+        this.sendJitsiBroadcastCommand(
+            JitsiCommand.FILE_META,
+            meta.sessionId,
+            { meta: JSON.stringify(meta) });
+    }
+
+    sendFileData(sessionId: string, data: ArrayBuffer) {
+        var binary = '';
+        var bytes = new Uint8Array(data);
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        const enc = window.btoa(binary);
+        
+        this.sendJitsiBroadcastCommand(JitsiCommand.FILE_SLICE, sessionId, {data: enc});
+    }
+
+    onFileMeta(param: JitsiCommandParam) {
+        const sessionId = param.value;
+        const senderId = param.attributes.senderId;
+        const senderName = param.attributes.senderName;
+        const meta = JSON.parse(param.attributes.meta);
+
+        if (senderId === this.myInfo.Jitsi_Id)
+            return;
+
+        this.ui.chattingPanel.onFileMeta(sessionId, meta, senderId, senderName);
+
+    }
+
+    onFileData(param: JitsiCommandParam) {
+        const sessionId = param.value;
+        const enc = param.attributes.data;
+        const senderId = param.attributes.senderId;
+        const senderName = param.attributes.senderName;
+
+        if (senderId === this.myInfo.Jitsi_Id)
+            return;
+
+        const binary = window.atob(enc);
+        const array = new Uint8Array(binary.length);
+
+        for (let i = 0; i < binary.length; ++i) {
+            array[i] = binary.charCodeAt(i);
+        }
+
+        this.ui.chattingPanel.onFileData(sessionId, array.buffer);
     }
 
     /* record */

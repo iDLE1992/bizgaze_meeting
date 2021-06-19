@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TsToDateFormat = void 0;
+exports.getCurrentTimestamp = exports.getCurTime = exports.TsToDateFormat = void 0;
 function TsToDateFormat(tsInMillisecond) {
     var sec = Math.floor(tsInMillisecond / 1000);
     // Hours part from the timestamp
@@ -14,4 +14,20 @@ function TsToDateFormat(tsInMillisecond) {
     return formattedTime;
 }
 exports.TsToDateFormat = TsToDateFormat;
+function getCurTime() {
+    var date = new Date();
+    var h = date.getHours();
+    var m = date.getMinutes();
+    var m_2 = ("0" + m).slice(-2);
+    var h_2 = ("0" + h).slice(-2);
+    var time = h_2 + ":" + m_2;
+    return time;
+}
+exports.getCurTime = getCurTime;
+function getCurrentTimestamp() {
+    var currentDate = new Date();
+    var timestamp = currentDate.getTime();
+    return timestamp;
+}
+exports.getCurrentTimestamp = getCurrentTimestamp;
 //# sourceMappingURL=TimeUtil.js.map

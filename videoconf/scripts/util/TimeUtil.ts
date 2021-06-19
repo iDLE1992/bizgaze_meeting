@@ -12,3 +12,19 @@
     const formattedTime = ("0" + hours).substr(-2) + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
     return formattedTime;
 }
+
+export function getCurTime() {
+    var date = new Date();
+    var h = date.getHours();
+    var m = date.getMinutes();
+    var m_2 = ("0" + m).slice(-2);
+    var h_2 = ("0" + h).slice(-2);
+    var time = h_2 + ":" + m_2;
+    return time;
+}
+
+export function getCurrentTimestamp() {
+    const currentDate = new Date();
+    const timestamp = currentDate.getTime();
+    return timestamp;
+}

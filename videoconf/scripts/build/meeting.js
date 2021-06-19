@@ -94,8 +94,8 @@ var BizGazeMeeting = /** @class */ (function () {
         this.localAudioElem = null;
         this.myInfo = new BGUser_1.UserInfo();
         this.JitsiMeetJS = window.JitsiMeetJS;
-        this.JitsiServerDomain = "idlests.com";
-        //JitsiServerDomain = "unimail.in";
+        //JitsiServerDomain = "idlests.com";
+        this.JitsiServerDomain = "unimail.in";
         this.localTracks = [];
         this.screenSharing = false;
         this.recording = false;
@@ -153,7 +153,6 @@ var BizGazeMeeting = /** @class */ (function () {
             this.jitsiRoom.leave().then(function () {
                 _this.leaveBGConference();
             }).catch(function (error) {
-                debugger;
                 _this.leaveBGConference();
             });
         }
@@ -563,9 +562,11 @@ var BizGazeMeeting = /** @class */ (function () {
     };
     BizGazeMeeting.prototype.onJitsiConnectionFailed = function () {
         this.Log("Failed to connect Jitsi Server - " + this.JitsiServerDomain);
+        this.stop();
     };
     BizGazeMeeting.prototype.disconnectFromJitsiServer = function () {
         this.Log("Disconnected from Jitsi Server - " + this.JitsiServerDomain);
+        this.stop();
     };
     BizGazeMeeting.prototype.joinJitsiConference = function () {
         var _this = this;
@@ -639,6 +640,12 @@ var BizGazeMeeting = /** @class */ (function () {
         });
         this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.ASK_RECORDING, function (param) {
             _this.onAskRecording(param);
+        });
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.FILE_META, function (param) {
+            _this.onFileMeta(param);
+        });
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.FILE_SLICE, function (param) {
+            _this.onFileData(param);
         });
         //set name
         this.jitsiRoom.setDisplayName(this.myInfo.Name);
@@ -804,6 +811,9 @@ var BizGazeMeeting = /** @class */ (function () {
      *
      * **************************************************************************
      */
+    //ATTENTION! attributes = {key1: not object, key2: not object, ...}
+    //send as primitive type like boolean, string, number...
+    //and decode when use value1, vaule2
     BizGazeMeeting.prototype.sendJitsiBroadcastCommand = function (type, value, attributes) {
         if (attributes === void 0) { attributes = null; }
         var param = new JitsiCommandParam_1.JitsiCommandParam();
@@ -849,6 +859,7 @@ var BizGazeMeeting = /** @class */ (function () {
      *        ScreenShare
      *        Recording
      *        Chatting
+     *        File Sharing
      *
      * **************************************************************************
      */
@@ -1157,7 +1168,6 @@ var BizGazeMeeting = /** @class */ (function () {
                                 if (tracks.length <= 0) {
                                     return [2 /*return*/];
                                 }
-                                debugger;
                                 cameraTrack = tracks[0];
                                 this.onLocalTrackAdded([cameraTrack]);
                                 this.screenSharing = false;
@@ -1197,6 +1207,43 @@ var BizGazeMeeting = /** @class */ (function () {
         if (user) {
             this.ui.chattingPanel.receiveMessage(senderId, user.getDisplayName(), msg, true);
         }
+    };
+    /*file sharing*/
+    BizGazeMeeting.prototype.sendFileMeta = function (meta) {
+        this.sendJitsiBroadcastCommand(jitsi_1.JitsiCommand.FILE_META, meta.sessionId, { meta: JSON.stringify(meta) });
+    };
+    BizGazeMeeting.prototype.sendFileData = function (sessionId, data) {
+        var binary = '';
+        var bytes = new Uint8Array(data);
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        var enc = window.btoa(binary);
+        this.sendJitsiBroadcastCommand(jitsi_1.JitsiCommand.FILE_SLICE, sessionId, { data: enc });
+    };
+    BizGazeMeeting.prototype.onFileMeta = function (param) {
+        var sessionId = param.value;
+        var senderId = param.attributes.senderId;
+        var senderName = param.attributes.senderName;
+        var meta = JSON.parse(param.attributes.meta);
+        if (senderId === this.myInfo.Jitsi_Id)
+            return;
+        this.ui.chattingPanel.onFileMeta(sessionId, meta, senderId, senderName);
+    };
+    BizGazeMeeting.prototype.onFileData = function (param) {
+        var sessionId = param.value;
+        var enc = param.attributes.data;
+        var senderId = param.attributes.senderId;
+        var senderName = param.attributes.senderName;
+        if (senderId === this.myInfo.Jitsi_Id)
+            return;
+        var binary = window.atob(enc);
+        var array = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; ++i) {
+            array[i] = binary.charCodeAt(i);
+        }
+        this.ui.chattingPanel.onFileData(sessionId, array.buffer);
     };
     BizGazeMeeting.prototype.toggleRecording = function () {
         return __awaiter(this, void 0, void 0, function () {

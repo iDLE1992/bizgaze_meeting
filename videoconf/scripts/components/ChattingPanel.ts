@@ -1,4 +1,9 @@
-﻿import { random } from "../util/snippet";
+﻿import { FileMeta } from "../file/FileMeta";
+import { FileReceiver, FileReceiverProps } from "../file/FileReceiver";
+import { FileSender, FileSenderProps } from "../file/FileSender";
+import { randomSessonId } from "../util/random";
+import { random } from "../util/snippet";
+import { getCurTime } from "../util/TimeUtil";
 
 export class ChattingPanelProps {
     chatOpenButton: HTMLElement;
@@ -6,6 +11,12 @@ export class ChattingPanelProps {
     openCallback: Function;
     sendChat: (msg: string) => void;
     sendPrivateChat: (jitsiId: string, msg: string) => void;
+    sendFileMeta: (meta: FileMeta) => {};
+    sendFileData: (sessionId: string, data: ArrayBuffer) => {};
+    onFileSendErrror: (filename: string, message: string) => {};
+    onFileSendFinished: (filename: string, message: string) => {};
+    onFileReceiveError: (filename: string, message: string) => {};
+    onFileReceiveFinished: (filename: string, message: string) => {};
 }
 
 export class ChattingPanel {
@@ -13,7 +24,11 @@ export class ChattingPanel {
     root: HTMLElement;
     inputField: HTMLElement;
     sendButton: HTMLElement;
+    filesendButton: HTMLElement;
     closeButton: HTMLElement;
+
+    fileElement: HTMLInputElement;
+    fileSendingPanel: HTMLElement;
 
     privatePanel: HTMLElement;
     privateLabelElement: HTMLElement;
@@ -33,6 +48,10 @@ export class ChattingPanel {
     remainColors: string[] = [];
     nameColorMap: Map<string, string>;
 
+
+    fileSendingPool: Map<string, FileSender> = new Map();
+    fileReceivingPool: Map<string, FileReceiver> = new Map();
+
     init(props: ChattingPanelProps) {
         this.props = props;
 
@@ -40,6 +59,9 @@ export class ChattingPanel {
         this.closeButton = document.querySelector(".chat-close-button");
         this.inputField = document.querySelector("#chat-input #usermsg");
         this.sendButton = document.querySelector(".send-button");
+        this.filesendButton = document.querySelector(".file-share-button");
+        this.fileElement = document.getElementById("file-selector") as HTMLInputElement;
+        this.fileSendingPanel = document.getElementById("file-sending");
         this.privatePanel = document.querySelector("#chat-recipient");
         this.privateLabelElement = $(this.privatePanel).find(">span")[0];
         this.privateCloseElement = $(this.privatePanel).find(">div")[0];
@@ -108,6 +130,14 @@ export class ChattingPanel {
         $(this.privateCloseElement).click(_ => {
             this.clearPrivateState();
         });
+
+        $(this.filesendButton).click(_ => {
+            $(this.fileElement).click();
+        });
+
+        $(this.fileElement).on("change", _ => {
+            this.sendFile();
+        });
     }
 
     open(opened: boolean) {
@@ -154,7 +184,7 @@ export class ChattingPanel {
         if (!msg) return;
 
         msg = this.emonameToEmoicon(msg);
-        const time = this.getCurTime();
+        const time = getCurTime();
 
         const privateClass = this.isPrivate ? "private" : "";
         let privateDetail = "";
@@ -240,7 +270,7 @@ export class ChattingPanel {
                         </div>\
                     </div>\
                 </div>\
-                <div class="timestamp">'+ this.getCurTime() + '</div>\
+                <div class="timestamp">'+ getCurTime() + '</div>\
             </div >\
         </div>');
 
@@ -275,15 +305,7 @@ export class ChattingPanel {
     }
 
 
-    private getCurTime() {
-        var date = new Date();
-        var h = date.getHours();
-        var m = date.getMinutes();
-        var m_2 = ("0" + m).slice(-2);
-        var h_2 = ("0" + h).slice(-2);
-        var time = h_2 + ":" + m_2;
-        return time;
-    }
+    
 
     private idToEmoname(id: string) {
         if (id == 'smiley1') return ':)';
@@ -363,6 +385,50 @@ export class ChattingPanel {
         this.isPrivate = false;
         this.privateSenderId = null;
         this.privatePanel.style.display = "none";
+    }
+
+    sendFile() {
+        const props = new FileSenderProps();
+        props.fileElement = this.fileElement;
+        props.fileSendingPanel = this.fileSendingPanel;
+        props.sessionId = randomSessonId();
+        props.onError = this.props.onFileSendErrror;
+        props.onFinished = this.props.onFileSendFinished;
+        props.sendFileData = this.props.sendFileData;
+        props.sendFileMeta = this.props.sendFileMeta;
+
+        const fileSender = new FileSender(props);
+        fileSender.sendFile();
+    }
+
+    onFileMeta(sessionId: string, meta: FileMeta, senderId: string, senderName: string) {
+        const props = new FileReceiverProps();
+        props.meta = meta;
+        props.senderId = senderId;
+        props.senderName = senderName;
+        props.onFinished = this.onFileReceiveFinished.bind(this);
+        props.onError = this.onFileReceiveError.bind(this);
+        props.addChatItem = this.receiveMessage.bind(this);
+
+        const receiver = new FileReceiver(props);
+        this.fileReceivingPool.set(sessionId, receiver);
+        receiver.show();
+    }
+
+    onFileData(sessionId: string, data: ArrayBuffer) {
+        const receiver = this.fileReceivingPool.get(sessionId);
+        if (receiver)
+            receiver.readFileData(data);
+    }
+
+    onFileReceiveError(sessionId: string, filename: string, message: string) {
+        this.fileReceivingPool.delete(sessionId);
+        this.props.onFileReceiveError(filename, message);
+    }
+
+    onFileReceiveFinished(sessionId: string, filename: string, message: string) {
+        this.fileReceivingPool.delete(sessionId);
+        this.props.onFileReceiveFinished(filename, message);
     }
 
 }
