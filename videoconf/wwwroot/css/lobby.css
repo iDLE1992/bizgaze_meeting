@@ -18,6 +18,11 @@
     background-color: #333;
 }
 
+.a-panel {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .select2-search {
     display: none;
 }
@@ -35,6 +40,19 @@ video {
     /*object-fit: fill;*/
 }
 
+.meeting-info {
+    display: flex;
+}
+.organizer {
+    border-left: 1px solid #ccc;
+}
+.start-session {
+    display: flex;
+}
+.biz-conf {
+    margin-right: 30px;
+    font-size: 2.4em;
+}
 
 #preloader {
     position: fixed;
@@ -110,4 +128,57 @@ video {
 
 #main-wrapper.show {
     opacity: 1;
+}
+
+
+
+@media (max-width: 991px) {
+    .a-panel {
+        display: block;
+    }
+}
+
+@media (max-width: 1199px) {
+    .lobby-footer {
+        display: block;
+    }
+
+    .meeting-info {
+        margin-right: auto;
+        margin-left: auto;
+    }
+
+    .start-session {
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+@media (max-width: 699px) {
+    .meeting-info {
+        display: block;
+    }
+    .organizer {
+        border-left: 0px;
+    }
+    .biz-conf {
+        margin-right: 0px;
+    }
+    .choose-device {
+        margin: 30px auto;
+    }
+
+    .choose-device h1 {
+        font-size: 3em;
+    }
+
+    .start-session {
+        flex-direction: column;
+    }
+}
+@media (max-width: 399px) {
+    .biz-conf {
+        margin-right: 0px;
+        font-size: 1.7em;
+    }
 }
