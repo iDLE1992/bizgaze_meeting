@@ -17,7 +17,6 @@ import { ChannelType } from "./enum/ChannelType";
 import { JitsiCommand, JitsiPrivateCommand } from "./protocol/jitsi";
 import { NotificationType } from "./enum/NotificationType";
 import { JitsiCommandQueue, JitsiPrivateCommandQueue } from "./jitsi/JitsiCommandQueue";
-import { send } from "node:process";
 import { FileMeta } from "./file/FileMeta";
 
 declare global {

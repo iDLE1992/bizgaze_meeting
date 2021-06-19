@@ -721,7 +721,7 @@ var MeetingUI = /** @class */ (function () {
             heading: title,
             text: message,
             showHideTransition: 'slide',
-            hideAfter: false,
+            hideAfter: 7000,
             bgColor: "#164157",
             icon: icon,
             stack: 5,

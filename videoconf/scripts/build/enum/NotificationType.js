@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NotificationType = void 0;
+var NotificationType;
+(function (NotificationType) {
+    NotificationType["User"] = "user";
+    NotificationType["GrantHost"] = "host";
+    NotificationType["Video"] = "video";
+    NotificationType["VideoMute"] = "video-mute";
+    NotificationType["Audio"] = "audio";
+    NotificationType["AudioMute"] = "audio-mute";
+    NotificationType["Recording"] = "recording";
+    NotificationType["Chat"] = "chat";
+    NotificationType["FileTransfer"] = "file-tranfer";
+    NotificationType["FileReceive"] = "file-receive";
+    NotificationType["Info"] = "info";
+    NotificationType["Warning"] = "warning";
+})(NotificationType = exports.NotificationType || (exports.NotificationType = {}));
+;
+//# sourceMappingURL=NotificationType.js.map
