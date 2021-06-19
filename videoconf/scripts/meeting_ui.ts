@@ -934,7 +934,7 @@ export class MeetingUI {
             heading: title,
             text: message,
             showHideTransition: 'slide',
-            hideAfter: false,//7000
+            hideAfter: 7000,
             bgColor: "#164157",
             icon: icon,
             stack: 5,
