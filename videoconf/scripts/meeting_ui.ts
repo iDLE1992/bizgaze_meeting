@@ -135,9 +135,9 @@ export class MeetingUI {
             this.meeting.forceStop();
         });
 
+        const _this = this;
         $(document).ready(() => {
-            this.refreshCardViews();
-            const _this = this;
+            _this.refreshCardViews();
 
             $(this.toolbarLeaveButtonElement).click(() => {
                 this.meeting.stop();
@@ -897,6 +897,7 @@ export class MeetingUI {
 
 
     public Log(message: string) {
+        return;
         if ($("#logPanel").length <= 0) {
             const logPanel = `<div id="logPanel" style="position: fixed;width: 300px;height: 100px;background: black;top:0px;left: 0px;
                                 z-index: 100000;border-right: 1px dashed rebeccapurple;border-bottom: 1px dashed rebeccapurple;overflow-y:auto;"></div>`;

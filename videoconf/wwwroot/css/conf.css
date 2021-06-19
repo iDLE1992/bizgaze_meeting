@@ -363,6 +363,21 @@ button:focus {
     width: 48px;
 }
 
+@media (max-width: 575px) {
+    .toolbox-icon {
+        height: 40px;
+        width: 40px;
+    }
+}
+
+@media (max-width: 319px) {
+    .toolbox-icon {
+        height: 30px;
+        width: 30px;
+    }
+}
+
+
     .toolbox-icon:hover {
         background: rgba(255,255,255,.2)
     }
@@ -1050,7 +1065,7 @@ button:focus {
 .subject-info-container {
     display: flex;
     justify-content: center;
-    max-width: calc(100% - 280px);
+    max-width: calc(100% - 20px);
     margin: 0 auto;
 }
 

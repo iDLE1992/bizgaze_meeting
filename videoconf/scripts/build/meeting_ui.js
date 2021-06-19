@@ -101,9 +101,9 @@ var MeetingUI = /** @class */ (function () {
         window.addEventListener('unload', function () {
             _this_1.meeting.forceStop();
         });
+        var _this = this;
         $(document).ready(function () {
-            _this_1.refreshCardViews();
-            var _this = _this_1;
+            _this.refreshCardViews();
             $(_this_1.toolbarLeaveButtonElement).click(function () {
                 _this_1.meeting.stop();
             });
@@ -689,6 +689,7 @@ var MeetingUI = /** @class */ (function () {
         this.notification(filename, message, NotificationType_1.NotificationType.FileReceive);
     };
     MeetingUI.prototype.Log = function (message) {
+        return;
         if ($("#logPanel").length <= 0) {
             var logPanel = "<div id=\"logPanel\" style=\"position: fixed;width: 300px;height: 100px;background: black;top:0px;left: 0px;\n                                z-index: 100000;border-right: 1px dashed rebeccapurple;border-bottom: 1px dashed rebeccapurple;overflow-y:auto;\"></div>";
             $("body").append(logPanel);
