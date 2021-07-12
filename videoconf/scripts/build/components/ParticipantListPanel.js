@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ParticipantListPanel = exports.ParticipantListPanelProps = void 0;
+exports.ParticipantListWidget = exports.ParticipantListPanelProps = void 0;
 var snippet_1 = require("../util/snippet");
 var vector_icon_1 = require("./vector_icon");
 var ParticipantItemProps = /** @class */ (function () {
@@ -102,8 +102,8 @@ var ParticipantListPanelProps = /** @class */ (function () {
     return ParticipantListPanelProps;
 }());
 exports.ParticipantListPanelProps = ParticipantListPanelProps;
-var ParticipantListPanel = /** @class */ (function () {
-    function ParticipantListPanel() {
+var ParticipantListWidget = /** @class */ (function () {
+    function ParticipantListWidget() {
         //states
         this.participantItemMap = new Map();
         this.isHost = false;
@@ -113,12 +113,12 @@ var ParticipantListPanel = /** @class */ (function () {
         this.participantListElement = $root.find("#participants-list-body")[0];
         this.muteAllButtonElement = $root.find("#participants-list-footer>.btn")[0];
     }
-    ParticipantListPanel.prototype.init = function (props) {
+    ParticipantListWidget.prototype.init = function (props) {
         this.props = props;
         this.updateParticipantCount();
         this.attachHandlers();
     };
-    ParticipantListPanel.prototype.attachHandlers = function () {
+    ParticipantListWidget.prototype.attachHandlers = function () {
         var _this = this;
         $(this.muteAllButtonElement).on('click', function () {
             if (_this.isHost)
@@ -127,7 +127,7 @@ var ParticipantListPanel = /** @class */ (function () {
                 });
         });
     };
-    ParticipantListPanel.prototype.addParticipant = function (jitsiId, name, me, useCamera, useMic) {
+    ParticipantListWidget.prototype.addParticipant = function (jitsiId, name, me, useCamera, useMic) {
         if (this.participantItemMap.has(jitsiId)) {
             this.removeParticipant(jitsiId);
         }
@@ -150,27 +150,27 @@ var ParticipantListPanel = /** @class */ (function () {
             $(this.participantListElement).append(item.element());
         }
     };
-    ParticipantListPanel.prototype.removeParticipant = function (jitsiId) {
+    ParticipantListWidget.prototype.removeParticipant = function (jitsiId) {
         if (!this.participantItemMap.has(jitsiId))
             return;
         this.participantItemMap.get(jitsiId).removeSelf();
         this.participantItemMap.delete(jitsiId);
         this.updateParticipantCount();
     };
-    ParticipantListPanel.prototype.updateParticipantCount = function () {
+    ParticipantListWidget.prototype.updateParticipantCount = function () {
         this.participantCountElement.innerHTML = "" + this.participantItemMap.size;
     };
-    ParticipantListPanel.prototype.setCameraMediaPolicy = function (jitsiId, useCamera) {
+    ParticipantListWidget.prototype.setCameraMediaPolicy = function (jitsiId, useCamera) {
         var item = this.participantItemMap.get(jitsiId);
         if (item)
             item.setCameraState(useCamera);
     };
-    ParticipantListPanel.prototype.setMicMediaPolicy = function (jitsiId, useMic) {
+    ParticipantListWidget.prototype.setMicMediaPolicy = function (jitsiId, useMic) {
         var item = this.participantItemMap.get(jitsiId);
         if (item)
             item.setMicState(useMic);
     };
-    ParticipantListPanel.prototype.updateByRole = function (isHost) {
+    ParticipantListWidget.prototype.updateByRole = function (isHost) {
         this.isHost = isHost;
         if (isHost)
             $(this.rootElement).addClass("is-host");
@@ -181,7 +181,7 @@ var ParticipantListPanel = /** @class */ (function () {
             participantItem.setRole(isHost);
         });
     };
-    return ParticipantListPanel;
+    return ParticipantListWidget;
 }());
-exports.ParticipantListPanel = ParticipantListPanel;
+exports.ParticipantListWidget = ParticipantListWidget;
 //# sourceMappingURL=ParticipantListPanel.js.map

@@ -14,7 +14,6 @@ body {
     height: 100%;
     font-size: 12px !important;
     font-weight: 400;
-    overflow: hidden;
     color: #f1f1f1;
     background: #474747;
     line-height: 1.4285714286;
@@ -45,6 +44,10 @@ body {
 
 ul {
     margin: 0;
+}
+
+#content {
+    box-sizing: content-box;
 }
 
 .container {
@@ -92,7 +95,7 @@ video {
     width: 100%;
 }
 
-#video-panel {
+#video-grid {
     width: 100%;
     align-content: center;
     align-items: center;
@@ -278,7 +281,7 @@ button:focus {
 }
 
 .active-speaker {
-    /*box-shadow: 0 0 5px 3px #165ecc;*/
+    box-shadow: 0 0 5px 3px #165ecc;
 }
 
 .new-toolbox {
@@ -288,6 +291,8 @@ button:focus {
     right: 0;
     transition: bottom .3s ease-in;
     width: 100%;
+    position: fixed;
+    z-index: 10;
 }
 
     .new-toolbox.visible {
@@ -300,7 +305,7 @@ button:focus {
         width: calc(100% - 315px);
     }
 
-    .shift-right#video-panel {
+    #video-grid.shift-right {
         margin-left: 315px;
         width: calc(100% - 315px);
     }
@@ -735,7 +740,7 @@ button:focus {
     height: 100%;
     left: -315px;
     overflow: hidden;
-    position: absolute;
+    position: fixed;
     top: 0;
     width: 315px;
     z-index: 200;
@@ -748,6 +753,12 @@ button:focus {
     #sideToolbarContainer.invisible {
         display: none;
     }
+
+@media (max-width: 314px) {
+    #sideToolbarContainer {
+        width: 280px;
+    }
+}
 
 .chat-header {
     height: 70px;
@@ -1104,6 +1115,11 @@ button:focus {
 }
 
 
+#record.live svg {
+    fill: red;
+}
+
+
 
 .modal-content {
     background: rgb(40, 52, 71);
@@ -1240,6 +1256,7 @@ button:focus {
 
 #open-participants-toggle {
     background-color: #131519;
+    position: fixed;
 }
 
 #participants-list {

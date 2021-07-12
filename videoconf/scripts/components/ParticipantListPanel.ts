@@ -166,7 +166,7 @@ export class ParticipantListPanelProps {
 }
 
 
-export class ParticipantListPanel {
+export class ParticipantListWidget {
     rootElement: HTMLElement;
     participantCountElement: HTMLElement;
     participantListElement: HTMLElement;

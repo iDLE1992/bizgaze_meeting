@@ -122,7 +122,7 @@ var Lobby = /** @class */ (function () {
         tracks.forEach(function (t) {
             if (t.getType() === MediaType_1.MediaType.VIDEO) {
                 _this_1.localVideoTrack = t;
-                t.attach(_this_1.videoPreviewElem);
+                _this_1.attachVideoTrackToElem(t, _this_1.videoPreviewElem);
                 _this_1.showCamera(true);
             }
             else if (t.getType() === MediaType_1.MediaType.AUDIO) {
@@ -227,7 +227,7 @@ var Lobby = /** @class */ (function () {
             tracks.forEach(function (t) {
                 if (t.getType() === MediaType_1.MediaType.VIDEO) {
                     _this_1.localVideoTrack = t;
-                    t.attach(_this_1.videoPreviewElem);
+                    _this_1.attachVideoTrackToElem(t, _this_1.videoPreviewElem);
                     _this_1.showCamera(true);
                 }
             });
@@ -297,10 +297,24 @@ var Lobby = /** @class */ (function () {
             $("#no-camera-icon").removeClass("d-none");
         }
     };
+    Lobby.prototype.attachVideoTrackToElem = function (track, elem) {
+        track.attach(elem);
+        this.resizeCameraView();
+    };
     Lobby.prototype.resizeCameraView = function () {
+        var _a;
         var $container = $("#camera-preview-container");
         var w = $container.width();
         var h = w * 9 / 16;
+        if (this.localVideoTrack) {
+            var rawTrack = this.localVideoTrack.getTrack();
+            var _b = (_a = rawTrack.getSettings()) !== null && _a !== void 0 ? _a : rawTrack.getConstraints(), height = _b.height, width = _b.width;
+            var Height = height;
+            var Width = width;
+            if (width && height) {
+                h = w * Height / Width;
+            }
+        }
         $container.css("height", h);
         $container.css("min-height", h);
     };

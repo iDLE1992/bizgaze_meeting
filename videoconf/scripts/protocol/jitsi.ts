@@ -13,6 +13,7 @@ export enum JitsiCommand {
     ASK_RECORDING = "ask-recording",
     FILE_META = "file_meta",
     FILE_SLICE = "file_slice",
+    BIZ_ID = "biz_id",
 };
 
 

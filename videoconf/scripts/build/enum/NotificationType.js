@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NotificationType = void 0;
+exports.NotificationDuration = exports.NotificationType = void 0;
 var NotificationType;
 (function (NotificationType) {
     NotificationType["User"] = "user";
@@ -17,4 +17,9 @@ var NotificationType;
     NotificationType["Warning"] = "warning";
 })(NotificationType = exports.NotificationType || (exports.NotificationType = {}));
 ;
+var NotificationDuration;
+(function (NotificationDuration) {
+    NotificationDuration["Permanent"] = "permanent";
+    NotificationDuration["HideAuto"] = "hide-auto";
+})(NotificationDuration = exports.NotificationDuration || (exports.NotificationDuration = {}));
 //# sourceMappingURL=NotificationType.js.map

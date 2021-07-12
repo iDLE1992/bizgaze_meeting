@@ -19,8 +19,8 @@ class LobbySeetings {
 export class Lobby {
     JitsiMeetJS = window.JitsiMeetJS;
 
-    videoPreviewElem: HTMLElement;
-    audioPreviewElem: HTMLElement;
+    videoPreviewElem: HTMLMediaElement;
+    audioPreviewElem: HTMLMediaElement;
 
     cameraListElem: HTMLInputElement;
     micListElem: HTMLInputElement;
@@ -50,8 +50,8 @@ export class Lobby {
     localAudioTrack: JitsiTrack = null;
 
     constructor() {
-        this.videoPreviewElem = document.getElementById("camera-preview");
-        this.audioPreviewElem = document.getElementById("mic-preview");
+        this.videoPreviewElem = document.getElementById("camera-preview") as HTMLMediaElement;
+        this.audioPreviewElem = document.getElementById("mic-preview") as HTMLMediaElement;
 
         this.cameraListElem = document.getElementById("camera-list") as HTMLInputElement;
         this.micListElem = document.getElementById("mic-list") as HTMLInputElement;
@@ -160,7 +160,7 @@ export class Lobby {
         tracks.forEach(t => {
             if (t.getType() === MediaType.VIDEO) {
                 this.localVideoTrack = t;
-                t.attach(this.videoPreviewElem);
+                this.attachVideoTrackToElem(t, this.videoPreviewElem);
                 this.showCamera(true);
             } else if (t.getType() === MediaType.AUDIO) {
                 this.localAudioTrack = t;
@@ -267,7 +267,7 @@ export class Lobby {
                 tracks.forEach(t => {
                     if (t.getType() === MediaType.VIDEO) {
                         this.localVideoTrack = t;
-                        t.attach(this.videoPreviewElem);
+                        this.attachVideoTrackToElem(t, this.videoPreviewElem);
                         this.showCamera(true);
                     }
                 });
@@ -342,10 +342,26 @@ export class Lobby {
         }
     }
 
+    attachVideoTrackToElem(track: JitsiTrack, elem: HTMLMediaElement) {
+        track.attach(elem);
+        this.resizeCameraView();
+    }
+
     resizeCameraView() {
         const $container = $("#camera-preview-container");
         const w = $container.width();
-        const h = w * 9 / 16;
+        let h = w * 9 / 16;
+
+        if (this.localVideoTrack) {
+            const rawTrack = this.localVideoTrack.getTrack();
+            const { height, width } = rawTrack.getSettings() ?? rawTrack.getConstraints();
+            const Height = height as number;
+            const Width = width as number;
+            if (width && height) {
+                h = w * Height / Width;
+            }
+        }
+
         $container.css("height", h);
         $container.css("min-height", h);
     }

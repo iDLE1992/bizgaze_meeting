@@ -1,4 +1,4 @@
-﻿import { NotificationType } from "../enum/NotificationType";
+﻿import { NotificationDuration, NotificationType } from "../enum/NotificationType";
 import { JitsiCommand } from "../protocol/jitsi";
 import { randomNumber, randomSessonId } from "../util/random";
 
@@ -42,10 +42,10 @@ export class AskDialog {
             icon: this.props.icon,
             stack: 5,
             loader: false,
-            afterShown: ()=>{
+            afterShown: () => {
                 this.allowButtonElement = document.getElementById(allowButtonId);
                 this.denyButtonElement = document.getElementById(denyButtonId);
-                this.root = $(this.allowButtonElement).closest(".jq-toast-wrap")[0];
+                this.root = $(this.allowButtonElement).closest(".jq-toast-single")[0];
                 this.attachHandlers();
             }
         });
@@ -59,7 +59,7 @@ export class AskDialog {
         });
         this.denyButtonElement.addEventListener('click', () => {
             if (typeof this.props.denyCallback === "function") {
-                this.props.denyCallback(this.props.param);
+                this.props.denyCallback(this.props.param); 
             }
             $(this.root).remove();
         });

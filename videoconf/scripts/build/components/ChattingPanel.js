@@ -5,7 +5,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from) {
     return to;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ChattingPanel = exports.ChattingPanelProps = void 0;
+exports.ChattingWidget = exports.ChattingPanelProps = void 0;
 var FileReceiver_1 = require("../file/FileReceiver");
 var FileSender_1 = require("../file/FileSender");
 var random_1 = require("../util/random");
@@ -17,8 +17,8 @@ var ChattingPanelProps = /** @class */ (function () {
     return ChattingPanelProps;
 }());
 exports.ChattingPanelProps = ChattingPanelProps;
-var ChattingPanel = /** @class */ (function () {
-    function ChattingPanel() {
+var ChattingWidget = /** @class */ (function () {
+    function ChattingWidget() {
         this.unreadCount = 0;
         this.isPrivate = false;
         this.nameColors = [];
@@ -26,7 +26,7 @@ var ChattingPanel = /** @class */ (function () {
         this.fileSendingPool = new Map();
         this.fileReceivingPool = new Map();
     }
-    ChattingPanel.prototype.init = function (props) {
+    ChattingWidget.prototype.init = function (props) {
         this.props = props;
         this.root = document.getElementById("sideToolbarContainer");
         this.closeButton = document.querySelector(".chat-close-button");
@@ -51,7 +51,7 @@ var ChattingPanel = /** @class */ (function () {
         this.attachEventHandlers();
         this.open(this.opened);
     };
-    ChattingPanel.prototype.attachEventHandlers = function () {
+    ChattingWidget.prototype.attachEventHandlers = function () {
         var _this_1 = this;
         $(this.closeButton).on('click', function () {
             _this_1.open(false);
@@ -102,36 +102,33 @@ var ChattingPanel = /** @class */ (function () {
             _this_1.sendFile();
         });
     };
-    ChattingPanel.prototype.open = function (opened) {
+    ChattingWidget.prototype.open = function (opened) {
         if (opened) {
             $("#video-panel").addClass("shift-right");
             $("#new-toolbox").addClass("shift-right");
             $(this.root).removeClass("invisible");
             $(this.inputField).focus();
-            $(".toolbox-icon", this.props.chatOpenButton).addClass("toggled");
+            //$(".toolbox-icon", this.props.chatOpenButton).addClass("toggled");
         }
         else {
             $("#video-panel").removeClass("shift-right");
             $("#new-toolbox").removeClass("shift-right");
             $(this.root).addClass("invisible");
-            $(".toolbox-icon", this.props.chatOpenButton).removeClass("toggled");
+            //$(".toolbox-icon", this.props.chatOpenButton).removeClass("toggled");
         }
         this.unreadCount = 0;
-        this.showUnreadBadge(false);
+        this.props.showUnreadBadge(false);
         this.opened = opened;
         this.props.openCallback();
     };
-    ChattingPanel.prototype.clearInput = function () {
+    ChattingWidget.prototype.clearInput = function () {
         $(this.inputField).val('');
     };
-    ChattingPanel.prototype.showUnreadBadge = function (show) {
-        this.props.unreadBadgeElement.style.display = !!show ? "flex" : "none";
-    };
-    ChattingPanel.prototype.toggleOpen = function () {
+    ChattingWidget.prototype.toggleOpen = function () {
         this.opened = !this.opened;
         this.open(this.opened);
     };
-    ChattingPanel.prototype.onSend = function () {
+    ChattingWidget.prototype.onSend = function () {
         var msg = $(this.inputField).val().toString().trim();
         this.clearInput();
         if (!msg)
@@ -160,13 +157,13 @@ var ChattingPanel = /** @class */ (function () {
         }
     };
     //chat
-    ChattingPanel.prototype.receiveMessage = function (id, username, message, isPrivate) {
+    ChattingWidget.prototype.receiveMessage = function (id, username, message, isPrivate) {
         if (isPrivate === void 0) { isPrivate = false; }
         //update unread count
         if (!this.opened) {
             this.unreadCount++;
-            $(this.props.unreadBadgeElement).html("" + this.unreadCount);
-            this.showUnreadBadge(true);
+            this.props.setUnreadCount(this.unreadCount);
+            this.props.showUnreadBadge(true);
         }
         //update ui
         var emoMessage = this.emonameToEmoicon(message);
@@ -197,7 +194,7 @@ var ChattingPanel = /** @class */ (function () {
         if (isPrivate)
             this.setPrivateState(id, username);
     };
-    ChattingPanel.prototype.scrollToBottom = function () {
+    ChattingWidget.prototype.scrollToBottom = function () {
         var overheight = 0;
         $(".chat-message-group").each(function () {
             overheight += $(this).height();
@@ -206,7 +203,7 @@ var ChattingPanel = /** @class */ (function () {
         var pos = overheight - limit;
         $("#chatconversation").animate({ scrollTop: pos }, 200);
     };
-    ChattingPanel.prototype.idToEmoname = function (id) {
+    ChattingWidget.prototype.idToEmoname = function (id) {
         if (id == 'smiley1')
             return ':)';
         if (id == 'smiley2')
@@ -248,7 +245,7 @@ var ChattingPanel = /** @class */ (function () {
         if (id == 'smiley20')
             return ':beer:';
     };
-    ChattingPanel.prototype.emonameToEmoicon = function (sms) {
+    ChattingWidget.prototype.emonameToEmoicon = function (sms) {
         var smsout = sms;
         smsout = smsout.replace(':)', '<span class="smiley" style="width: 20px; height:20px;">😃</span>');
         smsout = smsout.replace(':(', '<span class="smiley">😦</span>');
@@ -272,7 +269,7 @@ var ChattingPanel = /** @class */ (function () {
         smsout = smsout.replace(':beer:', '<span class="smiley">🍺</span>');
         return smsout;
     };
-    ChattingPanel.prototype.getNameColor = function (name) {
+    ChattingWidget.prototype.getNameColor = function (name) {
         if (this.nameColorMap.has(name))
             return this.nameColorMap.get(name);
         if (this.remainColors.length <= 0)
@@ -284,19 +281,19 @@ var ChattingPanel = /** @class */ (function () {
         this.nameColorMap.set(name, randomColor);
         return randomColor;
     };
-    ChattingPanel.prototype.setPrivateState = function (jitsiId, name) {
+    ChattingWidget.prototype.setPrivateState = function (jitsiId, name) {
         this.isPrivate = true;
         this.privateSenderId = jitsiId;
         this.privateSenderName = name;
         this.privatePanel.style.display = "flex";
         this.privateLabelElement.innerHTML = "Private message to " + name;
     };
-    ChattingPanel.prototype.clearPrivateState = function () {
+    ChattingWidget.prototype.clearPrivateState = function () {
         this.isPrivate = false;
         this.privateSenderId = null;
         this.privatePanel.style.display = "none";
     };
-    ChattingPanel.prototype.sendFile = function () {
+    ChattingWidget.prototype.sendFile = function () {
         var props = new FileSender_1.FileSenderProps();
         props.fileElement = this.fileElement;
         props.fileSendingPanel = this.fileSendingPanel;
@@ -308,7 +305,7 @@ var ChattingPanel = /** @class */ (function () {
         var fileSender = new FileSender_1.FileSender(props);
         fileSender.sendFile();
     };
-    ChattingPanel.prototype.onFileMeta = function (sessionId, meta, senderId, senderName) {
+    ChattingWidget.prototype.onFileMeta = function (sessionId, meta, senderId, senderName) {
         var props = new FileReceiver_1.FileReceiverProps();
         props.meta = meta;
         props.senderId = senderId;
@@ -320,20 +317,24 @@ var ChattingPanel = /** @class */ (function () {
         this.fileReceivingPool.set(sessionId, receiver);
         receiver.show();
     };
-    ChattingPanel.prototype.onFileData = function (sessionId, data) {
+    ChattingWidget.prototype.onFileData = function (sessionId, data) {
         var receiver = this.fileReceivingPool.get(sessionId);
         if (receiver)
             receiver.readFileData(data);
     };
-    ChattingPanel.prototype.onFileReceiveError = function (sessionId, filename, message) {
+    ChattingWidget.prototype.onFileReceiveError = function (sessionId, filename, message) {
         this.fileReceivingPool.delete(sessionId);
         this.props.onFileReceiveError(filename, message);
     };
-    ChattingPanel.prototype.onFileReceiveFinished = function (sessionId, filename, message) {
+    ChattingWidget.prototype.onFileReceiveFinished = function (sessionId, filename, message) {
         this.fileReceivingPool.delete(sessionId);
         this.props.onFileReceiveFinished(filename, message);
     };
-    return ChattingPanel;
+    ChattingWidget.prototype.openPrivateChat = function (jitsiId, name) {
+        this.open(true);
+        this.setPrivateState(jitsiId, name);
+    };
+    return ChattingWidget;
 }());
-exports.ChattingPanel = ChattingPanel;
+exports.ChattingWidget = ChattingWidget;
 //# sourceMappingURL=ChattingPanel.js.map

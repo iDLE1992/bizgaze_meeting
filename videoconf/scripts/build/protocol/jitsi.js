@@ -14,6 +14,7 @@ var JitsiCommand;
     JitsiCommand["ASK_RECORDING"] = "ask-recording";
     JitsiCommand["FILE_META"] = "file_meta";
     JitsiCommand["FILE_SLICE"] = "file_slice";
+    JitsiCommand["BIZ_ID"] = "biz_id";
 })(JitsiCommand = exports.JitsiCommand || (exports.JitsiCommand = {}));
 ;
 var JitsiPrivateCommand;

@@ -5,6 +5,7 @@ var UserProperty;
 (function (UserProperty) {
     UserProperty["videoElem"] = "videoElem";
     UserProperty["audioElem"] = "audioElem";
+    UserProperty["videoPanel"] = "videoPanel";
     UserProperty["IsHost"] = "IsHost";
     UserProperty["useCamera"] = "useCamera";
     UserProperty["useMic"] = "useMic";

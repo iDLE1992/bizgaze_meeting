@@ -12,3 +12,8 @@
     Info = "info",
     Warning = "warning",
 };
+
+export enum NotificationDuration {
+    Permanent = "permanent",
+    HideAuto = "hide-auto",
+}

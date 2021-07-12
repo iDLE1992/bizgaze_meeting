@@ -2,6 +2,8 @@
 import { MediaType } from "../enum/MediaType";
 
 export interface JitsiTrack {
+    getTrack(): MediaStreamTrack;
+
     //"video" for the video tracks and "audio" for the audio tracks
     getType(): MediaType;
     //only for the local tracks.
@@ -38,6 +40,9 @@ export interface JitsiTrack {
     isEnded(): boolean;
 
     isLocal(): boolean;
+
+    getSettings(): any;
+    getConstraints(): any;
 
     addEventListener(eventType: string, callback: Function): void;
     removeAllListeners(eventType: string): void;

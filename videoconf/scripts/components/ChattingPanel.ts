@@ -6,8 +6,6 @@ import { random } from "../util/snippet";
 import { getCurTime } from "../util/TimeUtil";
 
 export class ChattingPanelProps {
-    chatOpenButton: HTMLElement;
-    unreadBadgeElement: HTMLElement;
     openCallback: Function;
     sendChat: (msg: string) => void;
     sendPrivateChat: (jitsiId: string, msg: string) => void;
@@ -17,9 +15,11 @@ export class ChattingPanelProps {
     onFileSendFinished: (filename: string, message: string) => {};
     onFileReceiveError: (filename: string, message: string) => {};
     onFileReceiveFinished: (filename: string, message: string) => {};
+    showUnreadBadge: (show: boolean) => {};
+    setUnreadCount: (count: number)=>{};
 }
 
-export class ChattingPanel {
+export class ChattingWidget {
     //controls
     root: HTMLElement;
     inputField: HTMLElement;
@@ -147,17 +147,17 @@ export class ChattingPanel {
             $(this.root).removeClass("invisible");
             $(this.inputField).focus();
 
-            $(".toolbox-icon", this.props.chatOpenButton).addClass("toggled");
+            //$(".toolbox-icon", this.props.chatOpenButton).addClass("toggled");
         } else {
             $("#video-panel").removeClass("shift-right");
             $("#new-toolbox").removeClass("shift-right");
             $(this.root).addClass("invisible");
 
-            $(".toolbox-icon", this.props.chatOpenButton).removeClass("toggled");
+            //$(".toolbox-icon", this.props.chatOpenButton).removeClass("toggled");
         }
 
         this.unreadCount = 0;
-        this.showUnreadBadge(false);
+        this.props.showUnreadBadge(false);
 
         this.opened = opened;
 
@@ -166,10 +166,6 @@ export class ChattingPanel {
 
     clearInput() {
         $(this.inputField).val('');
-    }
-
-    showUnreadBadge(show: boolean) {
-        this.props.unreadBadgeElement.style.display = !!show ? "flex" : "none";
     }
 
     toggleOpen() {
@@ -241,8 +237,8 @@ export class ChattingPanel {
         //update unread count
         if (!this.opened) {
             this.unreadCount++;
-            $(this.props.unreadBadgeElement).html(`${this.unreadCount}`);
-            this.showUnreadBadge(true);
+            this.props.setUnreadCount(this.unreadCount);
+            this.props.showUnreadBadge(true);
         }
 
         //update ui
@@ -429,6 +425,11 @@ export class ChattingPanel {
     onFileReceiveFinished(sessionId: string, filename: string, message: string) {
         this.fileReceivingPool.delete(sessionId);
         this.props.onFileReceiveFinished(filename, message);
+    }
+
+    openPrivateChat(jitsiId: string, name: string) {
+        this.open(true);
+        this.setPrivateState(jitsiId, name);
     }
 
 }

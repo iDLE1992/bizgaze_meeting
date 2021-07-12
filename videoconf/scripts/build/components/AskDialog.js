@@ -29,7 +29,7 @@ var AskDialog = /** @class */ (function () {
             afterShown: function () {
                 _this.allowButtonElement = document.getElementById(allowButtonId);
                 _this.denyButtonElement = document.getElementById(denyButtonId);
-                _this.root = $(_this.allowButtonElement).closest(".jq-toast-wrap")[0];
+                _this.root = $(_this.allowButtonElement).closest(".jq-toast-single")[0];
                 _this.attachHandlers();
             }
         });
