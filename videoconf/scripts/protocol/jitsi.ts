@@ -11,6 +11,7 @@ export enum JitsiCommand {
     ALLOW_MIC = "allow_audio",
     INIT_MEDIA_POLICY = "init_media_policy",
     ASK_RECORDING = "ask-recording",
+    ASK_SCREENSHARE = "ask-screenshare",
     FILE_META = "file_meta",
     FILE_SLICE = "file_slice",
     BIZ_ID = "biz_id",
@@ -21,5 +22,6 @@ export enum JitsiCommand {
 export enum JitsiPrivateCommand {
     MEDIA_POLICY = "media_policy",
     ALLOW_RECORDING = "allow_recording",
+    ALLOW_SCREENSHARE = "allow_screenshare",
     PRIVATE_CAHT = "private_chat"
 }

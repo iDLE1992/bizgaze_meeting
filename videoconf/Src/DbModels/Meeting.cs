@@ -32,8 +32,20 @@ namespace BizGazeMeeting.DbModels
         [BsonElement("Participants")]
         public List<Participant> Participants { get; set; }
 
-        [BsonElement("ConferenceType")]
-        public string ConferenceType { get; set;}
+        [BsonElement("IsControlAllowed")]
+        public bool IsControlAllowed { get; set; }
+
+        [BsonElement("IsRecordingRequired")]
+        public bool IsRecordingRequired { get; set; }
+
+        [BsonElement("IsMultipleSharingAllowed")]
+        public bool IsMultipleSharingAllowed { get; set; }
+
+        [BsonElement("IsScreenShareRequired")]
+        public bool IsScreenShareRequired { get; set; }
+
+        [BsonElement("IsOpened")]
+        public bool IsOpened { get; set; }
 
         [BsonElement("ChannelType")]
         public string ChannelType { get; set; }

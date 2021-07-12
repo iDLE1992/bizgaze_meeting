@@ -658,6 +658,9 @@ var BizGazeMeeting = /** @class */ (function () {
         this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.ASK_RECORDING, function (param) {
             _this.onAskRecording(param);
         });
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.ASK_SCREENSHARE, function (param) {
+            _this.onAskScreenShare(param);
+        });
         this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.FILE_META, function (param) {
             _this.onFileMeta(param);
         });
@@ -892,6 +895,10 @@ var BizGazeMeeting = /** @class */ (function () {
         else if (type === jitsi_1.JitsiPrivateCommand.ALLOW_RECORDING) {
             var allow = message.allow;
             this.onAllowRecording(senderId, allow);
+        }
+        else if (type === jitsi_1.JitsiPrivateCommand.ALLOW_SCREENSHARE) {
+            var allow = message.allow;
+            this.onAllowScreenshare(senderId, allow);
         }
         else if (type === jitsi_1.JitsiPrivateCommand.PRIVATE_CAHT) {
             this.onReceivePrivateChatMessage(senderId, message);
@@ -1148,14 +1155,57 @@ var BizGazeMeeting = /** @class */ (function () {
                         return [4 /*yield*/, this.turnOnCamera()];
                     case 1:
                         _a.sent();
-                        return [3 /*break*/, 4];
-                    case 2: return [4 /*yield*/, this.turnOnScreenShare()];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
+                        return [3 /*break*/, 5];
+                    case 2:
+                        if (!this.roomInfo.IsScreenShareRequired) return [3 /*break*/, 3];
+                        //ask permission to host
+                        this.sendJitsiBroadcastCommand(jitsi_1.JitsiCommand.ASK_SCREENSHARE, this.myInfo.Jitsi_Id, null);
+                        this.ui.notification_warning("Wait a second", "Sent your screen sharing request", NotificationType_1.NotificationType.Screensharing);
+                        return [3 /*break*/, 5];
+                    case 3: return [4 /*yield*/, this.turnOnScreenShare()];
                     case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5:
                         this.ui.toolbar.setScreenShare(this.screenSharing);
                         return [2 /*return*/];
+                }
+            });
+        });
+    };
+    BizGazeMeeting.prototype.onAskScreenShare = function (param) {
+        if (!this.myInfo.IsHost)
+            return;
+        var senderName = param.attributes.senderName;
+        var senderId = param.attributes.senderId;
+        this.ui.askDialog(senderName, "Requested screen sharing", NotificationType_1.NotificationType.Screensharing, this.allowScreenshare.bind(this), this.denyScreenshare.bind(this), senderId);
+    };
+    BizGazeMeeting.prototype.allowScreenshare = function (jitsiId) {
+        this.sendJitsiPrivateCommand(jitsiId, jitsi_1.JitsiPrivateCommand.ALLOW_SCREENSHARE, { allow: true });
+    };
+    BizGazeMeeting.prototype.denyScreenshare = function (jitsiId) {
+        this.sendJitsiPrivateCommand(jitsiId, jitsi_1.JitsiPrivateCommand.ALLOW_SCREENSHARE, { allow: false });
+    };
+    BizGazeMeeting.prototype.onAllowScreenshare = function (senderId, allow) {
+        return __awaiter(this, void 0, void 0, function () {
+            var user, userName;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        user = this.jitsiRoom.getParticipantById(senderId);
+                        if (!user) return [3 /*break*/, 3];
+                        userName = user.getDisplayName();
+                        if (!allow) return [3 /*break*/, 2];
+                        this.ui.notification(userName, "Screensharing was accepted", NotificationType_1.NotificationType.Screensharing);
+                        return [4 /*yield*/, this.turnOnScreenShare()];
+                    case 1:
+                        _a.sent();
+                        this.ui.toolbar.setScreenShare(this.screenSharing);
+                        return [3 /*break*/, 3];
+                    case 2:
+                        this.ui.notification_warning(userName, "Screensharing was denied", NotificationType_1.NotificationType.Screensharing);
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -1297,20 +1347,26 @@ var BizGazeMeeting = /** @class */ (function () {
                     case 1:
                         _a.sent();
                         this.ui.toolbar.setRecording(this.recording);
-                        return [3 /*break*/, 5];
+                        return [3 /*break*/, 7];
                     case 2:
                         if (!this.myInfo.IsHost) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.startRecording()];
                     case 3:
                         _a.sent();
                         this.ui.toolbar.setRecording(this.recording);
-                        return [3 /*break*/, 5];
+                        return [3 /*break*/, 7];
                     case 4:
+                        if (!this.roomInfo.IsRecordingRequired) return [3 /*break*/, 5];
                         //ask permission to host
                         this.sendJitsiBroadcastCommand(jitsi_1.JitsiCommand.ASK_RECORDING, this.myInfo.Jitsi_Id, null);
                         this.ui.notification_warning("Wait a second", "Sent your recording request", NotificationType_1.NotificationType.Recording);
-                        _a.label = 5;
-                    case 5: return [2 /*return*/];
+                        return [3 /*break*/, 7];
+                    case 5: return [4 /*yield*/, this.startRecording()];
+                    case 6:
+                        _a.sent();
+                        this.ui.toolbar.setRecording(this.recording);
+                        _a.label = 7;
+                    case 7: return [2 /*return*/];
                 }
             });
         });

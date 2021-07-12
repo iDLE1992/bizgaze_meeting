@@ -10,7 +10,9 @@ using System;
 
 
 {ConferenceId, ConferenceName, StartDateTime, Duration, EndDateTime, 
-List<Participant> Participants, ConferenceTypeId, Description, CallbackUrl, RefGuid}
+List<Participant> Participants,
+IsControlAllowed, IsRecordingRequired, IsMultipleSharingAllowed, IsScreenShareRequired, IsOpened,
+Description, CallbackUrl, RefGuid}
 
 ConferenceId - ReferenceId generated from the Bizgaze App
 ConferenceName - Name Given to the Conference
@@ -19,7 +21,11 @@ StartDateTime - Start Date with time of Conference
 EndDateTime - End Date with time of Conference
 Duration - Duration
 Participants - List of Participants of the conference
-ConferenceTypeId - Open, Closed (Requires authentication or not)
+IsControlAllowed - Host can control Audio and Video of Participants
+IsRecordingRequired - Approval required for recording the meeting
+IsMultipleSharingAllowed - Allow multiple participants to screen share
+IsScreenShareRequired - Approval required to present/share the screen
+IsOpened - Allow external users to join meeting using link
 CallbackUrl - URL to be called when the caller subscribes for an event
 RefGuid - uniqueId generated for the conference in BizgazeApp
 

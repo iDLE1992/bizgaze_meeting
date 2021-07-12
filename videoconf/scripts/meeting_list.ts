@@ -13,8 +13,12 @@ let hasRoomJoined: boolean = false;
 $(meetingTable).DataTable({
     columns: [
         { data: 'RoomId', "width": "30%" },
-        { data: 'Name', "width": "40%" },
-        { data: 'ConferenceType', "width": "15%" },
+        { data: 'Name', "width": "30%" },
+        { data: 'IsControlAllowed', "width": "5%" },
+        { data: 'IsRecordingRequired', "width": "5%" },
+        { data: 'IsMultipleSharingAllowed', "width": "5%" },
+        { data: 'IsScreenShareRequired', "width": "5%" },
+        { data: 'IsOpened', "width": "5%" },
         { data: 'Button', "width": "15%" }
     ],
     "lengthChange": false,
@@ -67,15 +71,15 @@ $('#meetingTable tbody').on('click', 'button', function () {
     } else {
         const rowdata: any = $(meetingTable).DataTable().row($(this).parents('tr')).data();
         const meetingId = parseInt(rowdata.RoomId);
-        const meetingType = rowdata.ConferenceType;
+        const isOpened = rowdata.IsOpened;
         const userId = parseInt($(this).attr('id'));
 
         if (meetingId === NaN) return;
 
-        if (meetingType == MeetingType.Open) {
+        if (isOpened == true) {
             if (!userId) joinMeetingAsAnonymous(meetingId);
             else joinMeeting(meetingId, userId);
-        } else if (meetingType == MeetingType.Closed) {
+        } else if (isOpened == false) {
             if (userId !== NaN) joinMeeting(meetingId, userId);
         }
     }

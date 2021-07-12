@@ -382,7 +382,7 @@ export class Lobby {
 
     validateUser(meeting: BGMeeting): boolean {
         if (this.isAnonymousUser()) {
-            return meeting.ConferenceType === MeetingType.Open;
+            return meeting.IsOpened === true;
         }
         else {
             const user = meeting.Participants.filter(p => p.ParticipantId.toString() === this.userId);

@@ -64,9 +64,28 @@ namespace BizGazeMeeting.Model
 			get { return _meeting.CallbackUrl; }
         }
 
-		public string ConferenceType
+		public bool IsControlAllowed
+        {
+			get { return _meeting.IsControlAllowed; }
+		}
+
+		public bool IsRecordingRequired
+        {
+			get { return _meeting.IsRecordingRequired; }
+		}
+
+		public bool IsMultipleSharingAllowed
+        {
+			get { return _meeting.IsMultipleSharingAllowed; }
+		}
+		public bool IsScreenShareRequired
+        {
+			get { return _meeting.IsScreenShareRequired; }
+		}
+
+		public bool IsOpened
 		{
-			get { return _meeting.ConferenceType; }
+			get { return _meeting.IsOpened; }
 		}
 
 		public string ChannelType
@@ -149,12 +168,12 @@ namespace BizGazeMeeting.Model
 
 		public bool IsWebinar()
         {
-			return ConferenceType == MeetingType.Open;
+			return IsOpened == true;
 		}
 
 		public bool IsGroupChatting()
         {
-			return ConferenceType == MeetingType.Closed;
+			return IsOpened == false;
         }
 
 		public bool IsAudioOnly()
@@ -204,6 +223,10 @@ namespace BizGazeMeeting.Model
         {
 			public Int64 Id;
 			public bool IsWebinar;
+			public bool IsControlAllowed;
+			public bool IsRecordingRequired;
+			public bool IsScreenShareRequired;
+			public bool IsMultipleSharingAllowed;
 			public string channelType;
 			public string conferenceName;
 			public string hostName;
@@ -215,6 +238,10 @@ namespace BizGazeMeeting.Model
 			return new MeetingInfo() {
 				Id = this.Id,
 				IsWebinar = this.IsWebinar(),
+				IsControlAllowed = this.IsControlAllowed,
+				IsRecordingRequired = this.IsRecordingRequired,
+				IsScreenShareRequired = this.IsScreenShareRequired,
+				IsMultipleSharingAllowed = this.IsMultipleSharingAllowed,
 				channelType = this.ChannelType,
 				conferenceName = this.ConferenceName,
 				hostName = (this.HostClient != null) ? this.HostClient.Name : "",

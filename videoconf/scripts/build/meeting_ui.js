@@ -109,7 +109,7 @@ var MeetingUI = /** @class */ (function () {
             this.showParticipantListButton(false);
         else
             this.showParticipantListButton(true);
-        this.participantsListWidget.updateByRole(isHost);
+        this.participantsListWidget.updateByRole(isHost && this.meeting.roomInfo.IsControlAllowed);
     };
     //chattting
     MeetingUI.prototype.openChatting = function (o) {

@@ -170,11 +170,15 @@ namespace BizGazeMeeting.Server
                        {
                            RoomId = room.ConferenceId,
                            Name = room.ConferenceName,
-                           ConferenceType = room.ConferenceType,
+                           IsControlAllowed = room.IsControlAllowed,
+                           IsRecordingRequired = room.IsRecordingRequired,
+                           IsMultipleSharingAllowed = room.IsMultipleSharingAllowed,
+                           IsScreenShareRequired = room.IsScreenShareRequired,
+                           IsOpened = room.IsOpened,
                            Button = 
                                 string.Join("", (room.Participants.Select(
                                 u => string.Format("<button class='joinButton btn btn--secondary btn--m' id='{0}'>{1}</button>", u.ParticipantId, u.ParticipantName)))) +
-                                ((room.ConferenceType == MeetingType.Open) ? "<button class='joinButton btn btn--secondary btn--m'>Anonymous User</button>" : "")
+                                ((room.IsOpened == true) ? "<button class='joinButton btn btn--secondary btn--m'>Anonymous User</button>" : "")
 
                        };
             var data = JsonConvert.SerializeObject(list);

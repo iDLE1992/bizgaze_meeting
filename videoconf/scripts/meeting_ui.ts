@@ -137,7 +137,7 @@ export class MeetingUI {
         else
             this.showParticipantListButton(true);
 
-        this.participantsListWidget.updateByRole(isHost);
+        this.participantsListWidget.updateByRole(isHost && this.meeting.roomInfo.IsControlAllowed);
     }
 
     //chattting

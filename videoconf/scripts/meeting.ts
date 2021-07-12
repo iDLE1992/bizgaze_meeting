@@ -746,6 +746,9 @@ export class BizGazeMeeting {
         this.jitsiRoom.addCommandListener(JitsiCommand.ASK_RECORDING, (param: JitsiCommandParam) => {
             this.onAskRecording(param);
         })
+        this.jitsiRoom.addCommandListener(JitsiCommand.ASK_SCREENSHARE, (param: JitsiCommandParam) => {
+            this.onAskScreenShare(param);
+        })
         this.jitsiRoom.addCommandListener(JitsiCommand.FILE_META, (param: JitsiCommandParam) => {
             this.onFileMeta(param);
         })
@@ -1036,6 +1039,9 @@ export class BizGazeMeeting {
         } else if (type === JitsiPrivateCommand.ALLOW_RECORDING) {
             const allow = message.allow;
             this.onAllowRecording(senderId, allow);
+        } else if (type === JitsiPrivateCommand.ALLOW_SCREENSHARE) {
+            const allow = message.allow;
+            this.onAllowScreenshare(senderId, allow);
         } else if (type === JitsiPrivateCommand.PRIVATE_CAHT) {
             this.onReceivePrivateChatMessage(senderId, message);
         }
@@ -1354,10 +1360,66 @@ export class BizGazeMeeting {
     public async toggleScreenShare() {
         if (this.screenSharing)
             await this.turnOnCamera();
-        else
-            await this.turnOnScreenShare();
-
+        else {
+            if (this.roomInfo.IsScreenShareRequired) {
+                //ask permission to host
+                this.sendJitsiBroadcastCommand(
+                    JitsiCommand.ASK_SCREENSHARE,
+                    this.myInfo.Jitsi_Id, null);
+                this.ui.notification_warning(
+                    "Wait a second",
+                    "Sent your screen sharing request",
+                    NotificationType.Screensharing
+                );
+            }
+            else {
+                await this.turnOnScreenShare();
+            }
+        }
         this.ui.toolbar.setScreenShare(this.screenSharing);
+    }
+
+    onAskScreenShare(param: JitsiCommandParam) {
+        if (!this.myInfo.IsHost)
+            return;
+
+        const senderName = param.attributes.senderName;
+        const senderId = param.attributes.senderId;
+        this.ui.askDialog(
+            senderName,
+            "Requested screen sharing",
+            NotificationType.Screensharing,
+            this.allowScreenshare.bind(this),
+            this.denyScreenshare.bind(this),
+            senderId);
+    }
+
+    allowScreenshare(jitsiId: string) {
+        this.sendJitsiPrivateCommand(jitsiId, JitsiPrivateCommand.ALLOW_SCREENSHARE, { allow: true });
+    }
+    denyScreenshare(jitsiId: string) {
+        this.sendJitsiPrivateCommand(jitsiId, JitsiPrivateCommand.ALLOW_SCREENSHARE, { allow: false });
+    }
+
+    async onAllowScreenshare(senderId: string, allow: true) {
+        const user = this.jitsiRoom.getParticipantById(senderId) as JitsiParticipant;
+        if (user) {
+            const userName = user.getDisplayName();
+            if (allow) {
+                this.ui.notification(
+                    userName,
+                    "Screensharing was accepted",
+                    NotificationType.Screensharing);
+
+                await this.turnOnScreenShare();
+                this.ui.toolbar.setScreenShare(this.screenSharing);
+            } else {
+                this.ui.notification_warning(
+                    userName,
+                    "Screensharing was denied",
+                    NotificationType.Screensharing);
+            }
+        }
     }
 
     //turn on screen share
@@ -1500,15 +1562,21 @@ export class BizGazeMeeting {
                 await this.startRecording();
                 this.ui.toolbar.setRecording(this.recording);
             } else {
-                //ask permission to host
-                this.sendJitsiBroadcastCommand(
-                    JitsiCommand.ASK_RECORDING,
-                    this.myInfo.Jitsi_Id, null);
-                this.ui.notification_warning(
-                    "Wait a second",
-                    "Sent your recording request",
-                    NotificationType.Recording
-                );
+                if (this.roomInfo.IsRecordingRequired) {
+                    //ask permission to host
+                    this.sendJitsiBroadcastCommand(
+                        JitsiCommand.ASK_RECORDING,
+                        this.myInfo.Jitsi_Id, null);
+                    this.ui.notification_warning(
+                        "Wait a second",
+                        "Sent your recording request",
+                        NotificationType.Recording
+                    );
+                }
+                else {
+                    await this.startRecording();
+                    this.ui.toolbar.setRecording(this.recording);
+                }
             }
         }
     }

@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var signalR = require("@microsoft/signalr");
-var MeetingType_1 = require("./enum/MeetingType");
 var connection = new signalR.HubConnectionBuilder().withUrl("/BizGazeMeetingServer").build();
 var meetingTable = document.getElementById('meetingTable');
 var connectionStatusMessage = document.getElementById('connectionStatusMessage');
@@ -11,8 +10,12 @@ var hasRoomJoined = false;
 $(meetingTable).DataTable({
     columns: [
         { data: 'RoomId', "width": "30%" },
-        { data: 'Name', "width": "40%" },
-        { data: 'ConferenceType', "width": "15%" },
+        { data: 'Name', "width": "30%" },
+        { data: 'IsControlAllowed', "width": "5%" },
+        { data: 'IsRecordingRequired', "width": "5%" },
+        { data: 'IsMultipleSharingAllowed', "width": "5%" },
+        { data: 'IsScreenShareRequired', "width": "5%" },
+        { data: 'IsOpened', "width": "5%" },
         { data: 'Button', "width": "15%" }
     ],
     "lengthChange": false,
@@ -59,17 +62,17 @@ $('#meetingTable tbody').on('click', 'button', function () {
     else {
         var rowdata = $(meetingTable).DataTable().row($(this).parents('tr')).data();
         var meetingId = parseInt(rowdata.RoomId);
-        var meetingType = rowdata.ConferenceType;
+        var isOpened = rowdata.IsOpened;
         var userId = parseInt($(this).attr('id'));
         if (meetingId === NaN)
             return;
-        if (meetingType == MeetingType_1.MeetingType.Open) {
+        if (isOpened == true) {
             if (!userId)
                 joinMeetingAsAnonymous(meetingId);
             else
                 joinMeeting(meetingId, userId);
         }
-        else if (meetingType == MeetingType_1.MeetingType.Closed) {
+        else if (isOpened == false) {
             if (userId !== NaN)
                 joinMeeting(meetingId, userId);
         }

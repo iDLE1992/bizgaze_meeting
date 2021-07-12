@@ -4,7 +4,6 @@ exports.Lobby = void 0;
 var MediaType_1 = require("./enum/MediaType");
 var snippet_1 = require("./util/snippet");
 var ParticipantType_1 = require("./enum/ParticipantType");
-var MeetingType_1 = require("./enum/MeetingType");
 var LobbySeetings = /** @class */ (function () {
     function LobbySeetings() {
     }
@@ -332,7 +331,7 @@ var Lobby = /** @class */ (function () {
     Lobby.prototype.validateUser = function (meeting) {
         var _this_1 = this;
         if (this.isAnonymousUser()) {
-            return meeting.ConferenceType === MeetingType_1.MeetingType.Open;
+            return meeting.IsOpened === true;
         }
         else {
             var user = meeting.Participants.filter(function (p) { return p.ParticipantId.toString() === _this_1.userId; });
