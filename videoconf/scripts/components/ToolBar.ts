@@ -75,23 +75,25 @@ export class ToolBar {
 
 
     public update(userInfo: UserInfo, localTracks: JitsiTrack[]) {
-        let audioMuted = false, videoMuted = false;
+        let audioMuted = true, videoMuted = true;
         let hasAudioTrack = false, hasVideoTrack = false;
 
         localTracks.forEach(track => {
             if (track.getType() === MediaType.VIDEO) {
                 hasVideoTrack = true;
                 if (track.isMuted()) videoMuted = true;
+                else videoMuted = false;
             }
             else if (track.getType() === MediaType.AUDIO) {
                 hasAudioTrack = true;
                 if (track.isMuted()) audioMuted = true;
+                else audioMuted = false;
             }
         });
 
-        this.toolbarVideoButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
-        this.toolbarDesktopShareButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
-        this.toolbarAudioButtonElement.style.display = hasAudioTrack ? "inline-block" : "none";
+        //this.toolbarVideoButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
+        //this.toolbarDesktopShareButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
+        //this.toolbarAudioButtonElement.style.display = hasAudioTrack ? "inline-block" : "none";
 
         if (audioMuted) {
             $(this.toolbarAudioButtonElement).find("path").attr("d", VectorIcon.AUDIO_MUTE_ICON);

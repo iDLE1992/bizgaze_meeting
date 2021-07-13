@@ -109,9 +109,9 @@ export class ChattingWidget {
             sms += imoname;
             sendel.val(sms);
 
-            var el = $(".smileys-panel");
-            el.removeClass("show-smileys");
-            el.addClass("hide-smileys");
+            //var el = $(".smileys-panel");
+            //el.removeClass("show-smileys");
+            //el.addClass("hide-smileys");
 
             sendel.focus();
         });
@@ -187,6 +187,10 @@ export class ChattingWidget {
         if (this.isPrivate) {
             privateDetail = `<div style="color:#778899">private: ${this.privateSenderName}</div>`;
         } 
+
+        var el = $(".smileys-panel");
+        el.removeClass("show-smileys");
+        el.addClass("hide-smileys");
 
         var sel = $("#chatconversation div.chat-message-group:last-child");
         if (sel.hasClass("local")) {

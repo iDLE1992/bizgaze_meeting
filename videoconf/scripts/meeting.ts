@@ -1361,19 +1361,23 @@ export class BizGazeMeeting {
         if (this.screenSharing)
             await this.turnOnCamera();
         else {
-            if (this.roomInfo.IsScreenShareRequired) {
-                //ask permission to host
-                this.sendJitsiBroadcastCommand(
-                    JitsiCommand.ASK_SCREENSHARE,
-                    this.myInfo.Jitsi_Id, null);
-                this.ui.notification_warning(
-                    "Wait a second",
-                    "Sent your screen sharing request",
-                    NotificationType.Screensharing
-                );
-            }
-            else {
+            if (this.myInfo.IsHost) {
                 await this.turnOnScreenShare();
+            } else {
+                if (this.roomInfo.IsScreenShareRequired) {
+                    //ask permission to host
+                    this.sendJitsiBroadcastCommand(
+                        JitsiCommand.ASK_SCREENSHARE,
+                        this.myInfo.Jitsi_Id, null);
+                    this.ui.notification_warning(
+                        "Wait a second",
+                        "Sent your screen sharing request",
+                        NotificationType.Screensharing
+                    );
+                }
+                else {
+                    await this.turnOnScreenShare();
+                }
             }
         }
         this.ui.toolbar.setScreenShare(this.screenSharing);
