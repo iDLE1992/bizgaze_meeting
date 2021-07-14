@@ -66,6 +66,7 @@ export class MeetingUI {
         tProps.openChatting = this.openChatting.bind(this);
         tProps.toggleScreenShare = this.meeting.toggleScreenShare.bind(this.meeting);
         tProps.toggleRecording = this.meeting.toggleRecording.bind(this.meeting);
+        tProps.toggleHandRaise = this.meeting.toggleHandRaise.bind(this.meeting);
         tProps.openSetting = this.showSettingDialog.bind(this);
         tProps.leaveMeeting = this.meeting.stop.bind(this.meeting);
         this.toolbar = new ToolBar(tProps);

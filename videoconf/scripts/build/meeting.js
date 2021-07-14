@@ -203,6 +203,7 @@ var BizGazeMeeting = /** @class */ (function () {
         this.myInfo.mediaPolicy.useCamera = deviceUsePolicy.useCamera;
         this.myInfo.mediaPolicy.useMic = deviceUsePolicy.useMic;
         this.ui.updateByRole(this.myInfo.IsHost);
+        this.ui.toolbar.updateByRole(this.myInfo.IsHost);
         this.initMediaDevices()
             .then(function (_) {
             //connect to jitsi server and enter room
@@ -661,6 +662,9 @@ var BizGazeMeeting = /** @class */ (function () {
         this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.ASK_SCREENSHARE, function (param) {
             _this.onAskScreenShare(param);
         });
+        this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.ASK_HANDRAISE, function (param) {
+            _this.onAskHandRaise(param);
+        });
         this.jitsiRoom.addCommandListener(jitsi_1.JitsiCommand.FILE_META, function (param) {
             _this.onFileMeta(param);
         });
@@ -899,6 +903,10 @@ var BizGazeMeeting = /** @class */ (function () {
         else if (type === jitsi_1.JitsiPrivateCommand.ALLOW_SCREENSHARE) {
             var allow = message.allow;
             this.onAllowScreenshare(senderId, allow);
+        }
+        else if (type === jitsi_1.JitsiPrivateCommand.ALLOW_HANDRAISE) {
+            var allow = message.allow;
+            this.onAllowHandRaise(senderId, allow);
         }
         else if (type === jitsi_1.JitsiPrivateCommand.PRIVATE_CAHT) {
             this.onReceivePrivateChatMessage(senderId, message);
@@ -1543,6 +1551,52 @@ var BizGazeMeeting = /** @class */ (function () {
         var tracks = dest.stream.getTracks();
         tracks = tracks.concat(stream1.getVideoTracks()).concat(stream2.getVideoTracks());
         return new MediaStream(tracks);
+    };
+    // handraise
+    BizGazeMeeting.prototype.toggleHandRaise = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                if (!this.myInfo.IsHost) {
+                    //ask handraise to host
+                    this.sendJitsiBroadcastCommand(jitsi_1.JitsiCommand.ASK_HANDRAISE, this.myInfo.Jitsi_Id, null);
+                    this.ui.notification_warning("Wait a second", "Sent your hand-raise request", NotificationType_1.NotificationType.HandRaise);
+                }
+                return [2 /*return*/];
+            });
+        });
+    };
+    BizGazeMeeting.prototype.onAskHandRaise = function (param) {
+        if (!this.myInfo.IsHost)
+            return;
+        var senderName = param.attributes.senderName;
+        var senderId = param.attributes.senderId;
+        this.ui.askDialog(senderName, "Requested Hand-Raise", NotificationType_1.NotificationType.HandRaise, this.allowHandRaise.bind(this), this.denyHandRaise.bind(this), senderId);
+    };
+    BizGazeMeeting.prototype.allowHandRaise = function (jitsiId) {
+        this.sendJitsiPrivateCommand(jitsiId, jitsi_1.JitsiPrivateCommand.ALLOW_HANDRAISE, { allow: true });
+    };
+    BizGazeMeeting.prototype.denyHandRaise = function (jitsiId) {
+        this.sendJitsiPrivateCommand(jitsiId, jitsi_1.JitsiPrivateCommand.ALLOW_HANDRAISE, { allow: false });
+    };
+    BizGazeMeeting.prototype.onAllowHandRaise = function (senderId, allow) {
+        return __awaiter(this, void 0, void 0, function () {
+            var user, userName;
+            return __generator(this, function (_a) {
+                user = this.jitsiRoom.getParticipantById(senderId);
+                if (user) {
+                    userName = user.getDisplayName();
+                    if (allow) {
+                        this.ui.notification(userName, "Hand-raise was accepted", NotificationType_1.NotificationType.HandRaise);
+                        this.onAllowCamera(true);
+                        this.onAllowMic(true);
+                    }
+                    else {
+                        this.ui.notification_warning(userName, "Hand-raise was denied", NotificationType_1.NotificationType.HandRaise);
+                    }
+                }
+                return [2 /*return*/];
+            });
+        });
     };
     //highlight speaker
     BizGazeMeeting.prototype.onDominantSpeakerChanged = function (id) {

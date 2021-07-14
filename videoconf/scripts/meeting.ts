@@ -228,6 +228,7 @@ export class BizGazeMeeting {
         this.myInfo.mediaPolicy.useMic = deviceUsePolicy.useMic;
 
         this.ui.updateByRole(this.myInfo.IsHost);
+        this.ui.toolbar.updateByRole(this.myInfo.IsHost);
 
         this.initMediaDevices()
             .then(_ => {
@@ -749,6 +750,9 @@ export class BizGazeMeeting {
         this.jitsiRoom.addCommandListener(JitsiCommand.ASK_SCREENSHARE, (param: JitsiCommandParam) => {
             this.onAskScreenShare(param);
         })
+        this.jitsiRoom.addCommandListener(JitsiCommand.ASK_HANDRAISE, (param: JitsiCommandParam) => {
+            this.onAskHandRaise(param);
+        })
         this.jitsiRoom.addCommandListener(JitsiCommand.FILE_META, (param: JitsiCommandParam) => {
             this.onFileMeta(param);
         })
@@ -1042,6 +1046,9 @@ export class BizGazeMeeting {
         } else if (type === JitsiPrivateCommand.ALLOW_SCREENSHARE) {
             const allow = message.allow;
             this.onAllowScreenshare(senderId, allow);
+        } else if (type === JitsiPrivateCommand.ALLOW_HANDRAISE) {
+            const allow = message.allow;
+            this.onAllowHandRaise(senderId, allow);
         } else if (type === JitsiPrivateCommand.PRIVATE_CAHT) {
             this.onReceivePrivateChatMessage(senderId, message);
         }
@@ -1750,6 +1757,64 @@ export class BizGazeMeeting {
         tracks = tracks.concat(stream1.getVideoTracks()).concat(stream2.getVideoTracks());
 
         return new MediaStream(tracks);
+    }
+
+    // handraise
+    public async toggleHandRaise() {
+        if (! this.myInfo.IsHost) {
+            //ask handraise to host
+            this.sendJitsiBroadcastCommand(
+                JitsiCommand.ASK_HANDRAISE,
+                this.myInfo.Jitsi_Id, null);
+            this.ui.notification_warning(
+                "Wait a second",
+                "Sent your hand-raise request",
+                NotificationType.HandRaise
+            );
+        }
+    }
+
+    onAskHandRaise(param: JitsiCommandParam) {
+        if (!this.myInfo.IsHost)
+            return;
+
+        const senderName = param.attributes.senderName;
+        const senderId = param.attributes.senderId;
+        this.ui.askDialog(
+            senderName,
+            "Requested Hand-Raise",
+            NotificationType.HandRaise,
+            this.allowHandRaise.bind(this),
+            this.denyHandRaise.bind(this),
+            senderId);
+    }
+
+    allowHandRaise(jitsiId: string) {
+        this.sendJitsiPrivateCommand(jitsiId, JitsiPrivateCommand.ALLOW_HANDRAISE, { allow: true });
+    }
+    denyHandRaise(jitsiId: string) {
+        this.sendJitsiPrivateCommand(jitsiId, JitsiPrivateCommand.ALLOW_HANDRAISE, { allow: false });
+    }
+
+    async onAllowHandRaise(senderId: string, allow: true) {
+        const user = this.jitsiRoom.getParticipantById(senderId) as JitsiParticipant;
+        if (user) {
+            const userName = user.getDisplayName();
+            if (allow) {
+                this.ui.notification(
+                    userName,
+                    "Hand-raise was accepted",
+                    NotificationType.HandRaise);
+
+                this.onAllowCamera(true);
+                this.onAllowMic(true);
+            } else {
+                this.ui.notification_warning(
+                    userName,
+                    "Hand-raise was denied",
+                    NotificationType.HandRaise);
+            }
+        }
     }
 
     //highlight speaker

@@ -8,6 +8,7 @@ export class ToolBarProps {
     toggleAudioMute: () => void;
     toggleScreenShare: () => void;
     toggleRecording: () => void;
+    toggleHandRaise: () => void;
     openChatting: (open: boolean) => void;
     openSetting: () => void;
     leaveMeeting: () => void;
@@ -20,6 +21,7 @@ export class ToolBar {
     toolbarVideoButtonElement: HTMLElement;
     toolbarDesktopShareButtonElement: HTMLElement;
     toolbarRecordButtonElement: HTMLElement;
+    toolbarHandRaiseButtonElement: HTMLElement;
     toolbarChatButtonElement: HTMLElement;
     toolbarLeaveButtonElement: HTMLElement;
     toolbarSettingButtonElement: HTMLElement;
@@ -35,6 +37,7 @@ export class ToolBar {
         this.toolbarVideoButtonElement = document.querySelector("#camera-enable");
         this.toolbarDesktopShareButtonElement = document.querySelector("#share");
         this.toolbarRecordButtonElement = document.querySelector("#record");
+        this.toolbarHandRaiseButtonElement = document.querySelector("#handraise");
         this.toolbarChatButtonElement = document.querySelector("#chat");
         this.toolbarLeaveButtonElement = document.querySelector("#leave");
         this.toolbarSettingButtonElement = document.querySelector("#setting");
@@ -62,6 +65,11 @@ export class ToolBar {
 
         $(this.toolbarRecordButtonElement).on('click', () => {
             this.props.toggleRecording();
+        });
+
+        $(this.toolbarHandRaiseButtonElement).on('click', () => {
+            console.log("handraise clicked");
+            this.props.toggleHandRaise();
         });
 
         $(this.toolbarSettingButtonElement).on('click', () => {
@@ -145,5 +153,9 @@ export class ToolBar {
 
     setUnreadCount(count: number) {
         this.chattingUnreadBadge.innerHTML = `${count}`;
+    }
+
+    updateByRole(isHost: boolean) {
+        this.toolbarHandRaiseButtonElement.style.display = isHost ? "none" : "inline-block";
     }
 }

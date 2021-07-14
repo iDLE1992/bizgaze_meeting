@@ -11,6 +11,7 @@ var NotificationType;
     NotificationType["AudioMute"] = "audio-mute";
     NotificationType["Recording"] = "recording";
     NotificationType["Screensharing"] = "screensharing";
+    NotificationType["HandRaise"] = "handraise";
     NotificationType["Chat"] = "chat";
     NotificationType["FileTransfer"] = "file-tranfer";
     NotificationType["FileReceive"] = "file-receive";

@@ -18,6 +18,7 @@ var ToolBar = /** @class */ (function () {
         this.toolbarVideoButtonElement = document.querySelector("#camera-enable");
         this.toolbarDesktopShareButtonElement = document.querySelector("#share");
         this.toolbarRecordButtonElement = document.querySelector("#record");
+        this.toolbarHandRaiseButtonElement = document.querySelector("#handraise");
         this.toolbarChatButtonElement = document.querySelector("#chat");
         this.toolbarLeaveButtonElement = document.querySelector("#leave");
         this.toolbarSettingButtonElement = document.querySelector("#setting");
@@ -40,6 +41,10 @@ var ToolBar = /** @class */ (function () {
         });
         $(this.toolbarRecordButtonElement).on('click', function () {
             _this.props.toggleRecording();
+        });
+        $(this.toolbarHandRaiseButtonElement).on('click', function () {
+            console.log("handraise clicked");
+            _this.props.toggleHandRaise();
         });
         $(this.toolbarSettingButtonElement).on('click', function () {
             _this.props.openSetting();
@@ -114,6 +119,9 @@ var ToolBar = /** @class */ (function () {
     };
     ToolBar.prototype.setUnreadCount = function (count) {
         this.chattingUnreadBadge.innerHTML = "" + count;
+    };
+    ToolBar.prototype.updateByRole = function (isHost) {
+        this.toolbarHandRaiseButtonElement.style.display = isHost ? "none" : "inline-block";
     };
     return ToolBar;
 }());

@@ -7,6 +7,7 @@
     AudioMute = "audio-mute",
     Recording = "recording",
     Screensharing = "screensharing",
+    HandRaise = "handraise",
     Chat = "chat",
     FileTransfer = "file-tranfer",
     FileReceive = "file-receive",
