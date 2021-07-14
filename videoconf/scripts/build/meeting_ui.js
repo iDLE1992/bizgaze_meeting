@@ -72,6 +72,7 @@ var MeetingUI = /** @class */ (function () {
         var lProps = new ParticipantListPanel_1.ParticipantListPanelProps();
         lProps.onUseCamera = this.meeting.allowCamera.bind(this.meeting);
         lProps.onUseMic = this.meeting.allowMic.bind(this.meeting);
+        lProps.toggleCopyJoiningInfo = this.meeting.toggleCopyJoiningInfo.bind(this.meeting);
         this.participantsListWidget.init(lProps);
         //meeting description
         this.meetingDescWidget = new MeetingDescriptionWidget_1.MeetingDescriptionWidget();
@@ -106,11 +107,14 @@ var MeetingUI = /** @class */ (function () {
     };
     MeetingUI.prototype.updateByRole = function (isHost) {
         var isWebinar = this.meeting.roomInfo.IsWebinar;
-        if (isWebinar && !isHost)
+        /*if (isWebinar && !isHost)
             this.showParticipantListButton(false);
         else
-            this.showParticipantListButton(true);
+            this.showParticipantListButton(true);*/
         this.participantsListWidget.updateByRole(isHost && this.meeting.roomInfo.IsControlAllowed);
+    };
+    MeetingUI.prototype.updateJoiningInfo = function () {
+        this.participantsListWidget.updateJoiningInfo("https://" + window.location.host + "/lobby/" + this.meeting.roomInfo.Id);
     };
     //chattting
     MeetingUI.prototype.openChatting = function (o) {

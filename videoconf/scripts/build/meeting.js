@@ -204,6 +204,7 @@ var BizGazeMeeting = /** @class */ (function () {
         this.myInfo.mediaPolicy.useMic = deviceUsePolicy.useMic;
         this.ui.updateByRole(this.myInfo.IsHost);
         this.ui.toolbar.updateByRole(this.myInfo.IsHost);
+        this.ui.updateJoiningInfo();
         this.initMediaDevices()
             .then(function (_) {
             //connect to jitsi server and enter room
@@ -1597,6 +1598,14 @@ var BizGazeMeeting = /** @class */ (function () {
                 return [2 /*return*/];
             });
         });
+    };
+    BizGazeMeeting.prototype.toggleCopyJoiningInfo = function () {
+        var TempText = document.createElement("input");
+        TempText.value = "https://" + window.location.host + "/lobby/" + this.roomInfo.Id; // enter your meeting url here
+        document.body.appendChild(TempText);
+        TempText.select();
+        document.execCommand("copy");
+        document.body.removeChild(TempText);
     };
     //highlight speaker
     BizGazeMeeting.prototype.onDominantSpeakerChanged = function (id) {

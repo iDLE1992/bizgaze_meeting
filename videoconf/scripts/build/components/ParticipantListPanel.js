@@ -112,6 +112,8 @@ var ParticipantListWidget = /** @class */ (function () {
         this.participantCountElement = $root.find("#participant-count")[0];
         this.participantListElement = $root.find("#participants-list-body")[0];
         this.muteAllButtonElement = $root.find("#participants-list-footer>.btn")[0];
+        this.toggleCopyJoiningInfoElement = document.querySelector("#copy-joining-info");
+        this.joiningInfoElement = document.querySelector("#joining-info");
     }
     ParticipantListWidget.prototype.init = function (props) {
         this.props = props;
@@ -125,6 +127,9 @@ var ParticipantListWidget = /** @class */ (function () {
                 _this.participantItemMap.forEach(function (participantItem, key) {
                     participantItem.blockMic();
                 });
+        });
+        $(this.toggleCopyJoiningInfoElement).on('click', function (_) {
+            _this.props.toggleCopyJoiningInfo();
         });
     };
     ParticipantListWidget.prototype.addParticipant = function (jitsiId, name, me, useCamera, useMic) {
@@ -156,6 +161,9 @@ var ParticipantListWidget = /** @class */ (function () {
         this.participantItemMap.get(jitsiId).removeSelf();
         this.participantItemMap.delete(jitsiId);
         this.updateParticipantCount();
+    };
+    ParticipantListWidget.prototype.updateJoiningInfo = function (info) {
+        this.joiningInfoElement.innerHTML = info;
     };
     ParticipantListWidget.prototype.updateParticipantCount = function () {
         this.participantCountElement.innerHTML = "" + this.participantItemMap.size;

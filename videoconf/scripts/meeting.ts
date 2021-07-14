@@ -229,6 +229,7 @@ export class BizGazeMeeting {
 
         this.ui.updateByRole(this.myInfo.IsHost);
         this.ui.toolbar.updateByRole(this.myInfo.IsHost);
+        this.ui.updateJoiningInfo();
 
         this.initMediaDevices()
             .then(_ => {
@@ -1815,6 +1816,17 @@ export class BizGazeMeeting {
                     NotificationType.HandRaise);
             }
         }
+    }
+
+
+    toggleCopyJoiningInfo() {
+        var TempText = document.createElement("input");
+        TempText.value = "https://" + window.location.host + "/lobby/" + this.roomInfo.Id; // enter your meeting url here
+        document.body.appendChild(TempText);
+        TempText.select();
+
+        document.execCommand("copy");
+        document.body.removeChild(TempText);
     }
 
     //highlight speaker

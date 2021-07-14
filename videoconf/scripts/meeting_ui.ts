@@ -92,6 +92,7 @@ export class MeetingUI {
         const lProps = new ParticipantListPanelProps();
         lProps.onUseCamera = this.meeting.allowCamera.bind(this.meeting);
         lProps.onUseMic = this.meeting.allowMic.bind(this.meeting);
+        lProps.toggleCopyJoiningInfo = this.meeting.toggleCopyJoiningInfo.bind(this.meeting);
         this.participantsListWidget.init(lProps);
 
         //meeting description
@@ -133,12 +134,16 @@ export class MeetingUI {
 
     updateByRole(isHost: boolean) {
         const isWebinar = this.meeting.roomInfo.IsWebinar;
-        if (isWebinar && !isHost)
+        /*if (isWebinar && !isHost)
             this.showParticipantListButton(false);
         else
-            this.showParticipantListButton(true);
+            this.showParticipantListButton(true);*/
 
         this.participantsListWidget.updateByRole(isHost && this.meeting.roomInfo.IsControlAllowed);
+    }
+
+    updateJoiningInfo() {
+        this.participantsListWidget.updateJoiningInfo("https://" + window.location.host + "/lobby/" + this.meeting.roomInfo.Id);
     }
 
     //chattting

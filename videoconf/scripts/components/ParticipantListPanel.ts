@@ -163,6 +163,7 @@ class ParticipantItem {
 export class ParticipantListPanelProps {
     onUseCamera: (jitsiId: string, use: boolean) => {};
     onUseMic: (jitsiId: string, use: boolean) => {};
+    toggleCopyJoiningInfo: () => void;
 }
 
 
@@ -171,6 +172,8 @@ export class ParticipantListWidget {
     participantCountElement: HTMLElement;
     participantListElement: HTMLElement;
     muteAllButtonElement: HTMLElement;
+    toggleCopyJoiningInfoElement: HTMLElement;
+    joiningInfoElement: HTMLElement;
 
     //states
     participantItemMap: Map<string, ParticipantItem> = new Map();
@@ -185,6 +188,8 @@ export class ParticipantListWidget {
         this.participantCountElement = $root.find("#participant-count")[0];
         this.participantListElement = $root.find("#participants-list-body")[0];
         this.muteAllButtonElement = $root.find("#participants-list-footer>.btn")[0];
+        this.toggleCopyJoiningInfoElement = document.querySelector("#copy-joining-info");
+        this.joiningInfoElement = document.querySelector("#joining-info");
     }
 
     init(props: ParticipantListPanelProps) {
@@ -199,6 +204,9 @@ export class ParticipantListWidget {
             this.participantItemMap.forEach((participantItem, key) => {
                 participantItem.blockMic();
             });
+        });
+        $(this.toggleCopyJoiningInfoElement).on('click', _ => {
+            this.props.toggleCopyJoiningInfo();
         });
     }
 
@@ -237,6 +245,10 @@ export class ParticipantListWidget {
         this.participantItemMap.get(jitsiId).removeSelf();
         this.participantItemMap.delete(jitsiId);
         this.updateParticipantCount();
+    }
+
+    updateJoiningInfo(info: string) {
+        this.joiningInfoElement.innerHTML = info;
     }
 
     updateParticipantCount() {
