@@ -242,7 +242,7 @@ var VideoPanel = /** @class */ (function () {
         var videoTag = "<video autoplay playsinline  class='" + this.videoElementClass + "' id='remoteVideo_" + this.Id + "'></video>";
         var audioTag = "<audio autoplay=\"\" id=\"remoteAudio_" + this.Id + "\"></audio>";
         var avatarVisible = 'visible';
-        var cameraStatus = '<div class="indicator-container videoMuted d-none"> \
+        var cameraStatus = '<div class="indicator-container videoMuted"> \
                         <div> \
                             <span class="indicator-icon-container  toolbar-icon" id=""> \
                                 <div class="jitsi-icon "> \
@@ -253,7 +253,7 @@ var VideoPanel = /** @class */ (function () {
                             </span> \
                         </div> \
                     </div>';
-        var micStatus = '<div class="indicator-container audioMuted d-none"> \
+        var micStatus = '<div class="indicator-container audioMuted"> \
                             <div> \
                                 <span class="indicator-icon-container  toolbar-icon" id=""> \
                                     <div class="jitsi-icon "> \
@@ -264,7 +264,7 @@ var VideoPanel = /** @class */ (function () {
                                 </span> \
                             </div> \
                         </div>';
-        var moderatorStatus = '<div class="moderator-icon right d-none"> \
+        var moderatorStatus = '<div class="moderator-icon right"> \
                                 <div class="indicator-container"> \
                                     <div> \
                                         <span class="indicator-icon-container focusindicator toolbar-icon" id=""> \

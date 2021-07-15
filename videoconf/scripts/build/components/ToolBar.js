@@ -54,27 +54,23 @@ var ToolBar = /** @class */ (function () {
         });
     };
     ToolBar.prototype.update = function (userInfo, localTracks) {
-        var audioMuted = true, videoMuted = true;
+        var audioMuted = false, videoMuted = false;
         var hasAudioTrack = false, hasVideoTrack = false;
         localTracks.forEach(function (track) {
             if (track.getType() === MediaType_1.MediaType.VIDEO) {
                 hasVideoTrack = true;
                 if (track.isMuted())
                     videoMuted = true;
-                else
-                    videoMuted = false;
             }
             else if (track.getType() === MediaType_1.MediaType.AUDIO) {
                 hasAudioTrack = true;
                 if (track.isMuted())
                     audioMuted = true;
-                else
-                    audioMuted = false;
             }
         });
-        //this.toolbarVideoButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
-        //this.toolbarDesktopShareButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
-        //this.toolbarAudioButtonElement.style.display = hasAudioTrack ? "inline-block" : "none";
+        this.toolbarVideoButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
+        this.toolbarDesktopShareButtonElement.style.display = hasVideoTrack ? "inline-block" : "none";
+        this.toolbarAudioButtonElement.style.display = hasAudioTrack ? "inline-block" : "none";
         if (audioMuted) {
             $(this.toolbarAudioButtonElement).find("path").attr("d", vector_icon_1.VectorIcon.AUDIO_MUTE_ICON);
             $(this.toolbarAudioButtonElement).addClass("muted");

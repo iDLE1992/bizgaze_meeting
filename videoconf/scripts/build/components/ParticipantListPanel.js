@@ -11,8 +11,8 @@ var ParticipantItemProps = /** @class */ (function () {
 var ParticipantItem = /** @class */ (function () {
     function ParticipantItem(props) {
         this.props = props;
-        this.useCamera = this.props.useCamera;
-        this.useMic = this.props.useMic;
+        this.muteCamera = this.props.muteCamera;
+        this.muteMic = this.props.muteMic;
         this.init();
     }
     ParticipantItem.prototype.init = function () {
@@ -60,38 +60,38 @@ var ParticipantItem = /** @class */ (function () {
     ParticipantItem.prototype.onToggleCamera = function () {
         if (!this.isHost)
             return;
-        this.useCamera = !this.useCamera;
-        this.updateCameraIcon();
-        this.props.onUseCamera(this.props.jitsiId, this.useCamera);
+        //this.muteCamera = !this.muteCamera;
+        //this.updateCameraIcon();
+        this.props.onMuteCamera(this.props.jitsiId, !this.muteCamera);
     };
     ParticipantItem.prototype.onToggleMic = function () {
         if (!this.isHost)
             return;
-        this.useMic = !this.useMic;
-        this.updateMicIcon();
-        this.props.onUseMic(this.props.jitsiId, this.useMic);
+        //this.muteMic = !this.muteMic;
+        //this.updateMicIcon();
+        this.props.onMuteMic(this.props.jitsiId, !this.muteMic);
     };
     ParticipantItem.prototype.blockMic = function () {
-        if (this.useMic)
+        if (!this.muteMic)
             this.onToggleMic();
     };
-    ParticipantItem.prototype.setMicState = function (use) {
-        this.useMic = use;
+    ParticipantItem.prototype.setMuteAudio = function (use) {
+        this.muteMic = use;
         this.updateMicIcon();
     };
-    ParticipantItem.prototype.setCameraState = function (use) {
-        this.useCamera = use;
+    ParticipantItem.prototype.setMuteCamera = function (use) {
+        this.muteCamera = use;
         this.updateCameraIcon();
     };
     ParticipantItem.prototype.setRole = function (isHost) {
         this.isHost = isHost;
     };
     ParticipantItem.prototype.updateCameraIcon = function () {
-        var icon = this.useCamera ? vector_icon_1.VectorIcon.VIDEO_UNMUTE_ICON : vector_icon_1.VectorIcon.VIDEO_MUTE_ICON;
+        var icon = this.muteCamera ? vector_icon_1.VectorIcon.VIDEO_MUTE_ICON : vector_icon_1.VectorIcon.VIDEO_UNMUTE_ICON;
         $(this.cameraIconElement).attr("d", icon);
     };
     ParticipantItem.prototype.updateMicIcon = function () {
-        var icon = this.useMic ? vector_icon_1.VectorIcon.AUDIO_UNMUTE_ICON : vector_icon_1.VectorIcon.AUDIO_MUTE_ICON;
+        var icon = this.muteMic ? vector_icon_1.VectorIcon.AUDIO_MUTE_ICON : vector_icon_1.VectorIcon.AUDIO_UNMUTE_ICON;
         $(this.micIconElement).attr("d", icon);
     };
     return ParticipantItem;
@@ -132,7 +132,7 @@ var ParticipantListWidget = /** @class */ (function () {
             _this.props.toggleCopyJoiningInfo();
         });
     };
-    ParticipantListWidget.prototype.addParticipant = function (jitsiId, name, me, useCamera, useMic) {
+    ParticipantListWidget.prototype.addParticipant = function (jitsiId, name, me, muteCamera, muteMic) {
         if (this.participantItemMap.has(jitsiId)) {
             this.removeParticipant(jitsiId);
         }
@@ -140,10 +140,10 @@ var ParticipantListWidget = /** @class */ (function () {
         props.jitsiId = jitsiId;
         props.name = name;
         props.me = me;
-        props.useCamera = useCamera;
-        props.useMic = useMic;
-        props.onUseCamera = this.props.onUseCamera;
-        props.onUseMic = this.props.onUseMic;
+        props.muteCamera = muteCamera;
+        props.muteMic = muteMic;
+        props.onMuteCamera = this.props.onMuteCamera;
+        props.onMuteMic = this.props.onMuteMic;
         var item = new ParticipantItem(props);
         item.setRole(this.isHost);
         this.participantItemMap.set(jitsiId, item);
@@ -168,15 +168,15 @@ var ParticipantListWidget = /** @class */ (function () {
     ParticipantListWidget.prototype.updateParticipantCount = function () {
         this.participantCountElement.innerHTML = "" + this.participantItemMap.size;
     };
-    ParticipantListWidget.prototype.setCameraMediaPolicy = function (jitsiId, useCamera) {
+    ParticipantListWidget.prototype.setMuteCamera = function (jitsiId, muteCamera) {
         var item = this.participantItemMap.get(jitsiId);
         if (item)
-            item.setCameraState(useCamera);
+            item.setMuteCamera(muteCamera);
     };
-    ParticipantListWidget.prototype.setMicMediaPolicy = function (jitsiId, useMic) {
+    ParticipantListWidget.prototype.setMuteMic = function (jitsiId, muteMic) {
         var item = this.participantItemMap.get(jitsiId);
         if (item)
-            item.setMicState(useMic);
+            item.setMuteAudio(muteMic);
     };
     ParticipantListWidget.prototype.updateByRole = function (isHost) {
         this.isHost = isHost;

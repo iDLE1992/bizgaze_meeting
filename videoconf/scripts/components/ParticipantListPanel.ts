@@ -6,10 +6,10 @@ class ParticipantItemProps {
     jitsiId: string;
     name: string;
     me: boolean;
-    useCamera: boolean;
-    useMic: boolean;
-    onUseCamera: (jitsiId: string, use:boolean) => {};
-    onUseMic: (jitsiId: string, use: boolean) => {};
+    muteCamera: boolean;
+    muteMic: boolean;
+    onMuteCamera: (jitsiId: string, use:boolean) => {};
+    onMuteMic: (jitsiId: string, use: boolean) => {};
 }
 
 class ParticipantItem {
@@ -24,8 +24,8 @@ class ParticipantItem {
     micIconElement: SVGPathElement;
 
     //state
-    useCamera: boolean;
-    useMic: boolean;
+    muteCamera: boolean;
+    muteMic: boolean;
     isHost: boolean;
 
     //props
@@ -33,8 +33,8 @@ class ParticipantItem {
 
     constructor(props: ParticipantItemProps) {
         this.props = props;
-        this.useCamera = this.props.useCamera;
-        this.useMic = this.props.useMic;
+        this.muteCamera = this.props.muteCamera;
+        this.muteMic = this.props.muteMic;
 
         this.init();
     }
@@ -118,30 +118,30 @@ class ParticipantItem {
     onToggleCamera() {
         if (!this.isHost)
             return;
-        this.useCamera = !this.useCamera;
-        this.updateCameraIcon();
-        this.props.onUseCamera(this.props.jitsiId, this.useCamera);
+        //this.muteCamera = !this.muteCamera;
+        //this.updateCameraIcon();
+        this.props.onMuteCamera(this.props.jitsiId, !this.muteCamera);
     }
     onToggleMic() {
         if (!this.isHost)
             return;
-        this.useMic = !this.useMic;
-        this.updateMicIcon();
-        this.props.onUseMic(this.props.jitsiId, this.useMic);
+        //this.muteMic = !this.muteMic;
+        //this.updateMicIcon();
+        this.props.onMuteMic(this.props.jitsiId, !this.muteMic);
     }
 
     blockMic() {
-        if (this.useMic)
+        if (!this.muteMic)
             this.onToggleMic();
     }
 
-    setMicState(use: boolean) {
-        this.useMic = use;
+    setMuteAudio(use: boolean) {
+        this.muteMic = use;
         this.updateMicIcon();
     }
 
-    setCameraState(use: boolean) {
-        this.useCamera = use;
+    setMuteCamera(use: boolean) {
+        this.muteCamera = use;
         this.updateCameraIcon();
     }
 
@@ -150,19 +150,19 @@ class ParticipantItem {
     }
 
     updateCameraIcon() {
-        const icon = this.useCamera ? VectorIcon.VIDEO_UNMUTE_ICON : VectorIcon.VIDEO_MUTE_ICON;
+        const icon = this.muteCamera ? VectorIcon.VIDEO_MUTE_ICON : VectorIcon.VIDEO_UNMUTE_ICON;
         $(this.cameraIconElement).attr("d", icon);
     }
 
     updateMicIcon() {
-        const icon = this.useMic ? VectorIcon.AUDIO_UNMUTE_ICON : VectorIcon.AUDIO_MUTE_ICON;
+        const icon = this.muteMic ? VectorIcon.AUDIO_MUTE_ICON : VectorIcon.AUDIO_UNMUTE_ICON;
         $(this.micIconElement).attr("d", icon);
     }
 }
 
 export class ParticipantListPanelProps {
-    onUseCamera: (jitsiId: string, use: boolean) => {};
-    onUseMic: (jitsiId: string, use: boolean) => {};
+    onMuteCamera: (jitsiId: string, use: boolean) => {};
+    onMuteMic: (jitsiId: string, use: boolean) => {};
     toggleCopyJoiningInfo: () => void;
 }
 
@@ -210,7 +210,7 @@ export class ParticipantListWidget {
         });
     }
 
-    addParticipant(jitsiId: string, name: string, me: boolean, useCamera: boolean, useMic: boolean) {
+    addParticipant(jitsiId: string, name: string, me: boolean, muteCamera: boolean, muteMic: boolean) {
         if (this.participantItemMap.has(jitsiId)) {
             this.removeParticipant(jitsiId);
         }
@@ -219,10 +219,10 @@ export class ParticipantListWidget {
         props.jitsiId = jitsiId;
         props.name = name;
         props.me = me;
-        props.useCamera = useCamera;
-        props.useMic = useMic;
-        props.onUseCamera = this.props.onUseCamera;
-        props.onUseMic = this.props.onUseMic;
+        props.muteCamera = muteCamera;
+        props.muteMic = muteMic;
+        props.onMuteCamera = this.props.onMuteCamera;
+        props.onMuteMic = this.props.onMuteMic;
 
         const item = new ParticipantItem(props);
         item.setRole(this.isHost);
@@ -255,16 +255,16 @@ export class ParticipantListWidget {
         this.participantCountElement.innerHTML = `${this.participantItemMap.size}`;
     }
    
-    setCameraMediaPolicy(jitsiId: string, useCamera: boolean) {
+    setMuteCamera(jitsiId: string, muteCamera: boolean) {
         const item = this.participantItemMap.get(jitsiId);
         if (item) 
-            item.setCameraState(useCamera);
+            item.setMuteCamera(muteCamera);
     }
 
-    setMicMediaPolicy(jitsiId: string, useMic: boolean) {
+    setMuteMic(jitsiId: string, muteMic: boolean) {
         const item = this.participantItemMap.get(jitsiId);
         if (item)
-            item.setMicState(useMic);
+            item.setMuteAudio(muteMic);
     }
 
     updateByRole(isHost: boolean) {

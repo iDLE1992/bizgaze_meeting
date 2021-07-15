@@ -70,8 +70,8 @@ var MeetingUI = /** @class */ (function () {
         //list
         this.participantsListWidget = new ParticipantListPanel_1.ParticipantListWidget();
         var lProps = new ParticipantListPanel_1.ParticipantListPanelProps();
-        lProps.onUseCamera = this.meeting.allowCamera.bind(this.meeting);
-        lProps.onUseMic = this.meeting.allowMic.bind(this.meeting);
+        lProps.onMuteCamera = this.meeting.muteUserVideo.bind(this.meeting);
+        lProps.onMuteMic = this.meeting.muteUserAudio.bind(this.meeting);
         lProps.toggleCopyJoiningInfo = this.meeting.toggleCopyJoiningInfo.bind(this.meeting);
         this.participantsListWidget.init(lProps);
         //meeting description
@@ -134,8 +134,8 @@ var MeetingUI = /** @class */ (function () {
         settingDialog.show();
     };
     //add, remove participant to and from list
-    MeetingUI.prototype.addParticipant = function (jitsiId, name, me, useCamera, useMic) {
-        this.participantsListWidget.addParticipant(jitsiId, name, me, useCamera, useMic);
+    MeetingUI.prototype.addParticipant = function (jitsiId, name, me, muteCamera, muteMic) {
+        this.participantsListWidget.addParticipant(jitsiId, name, me, muteCamera, muteMic);
     };
     MeetingUI.prototype.removeParticipant = function (jitsiId) {
         this.participantsListWidget.removeParticipant(jitsiId);

@@ -309,7 +309,7 @@ export class VideoPanel {
         const audioTag = `<audio autoplay="" id="remoteAudio_${this.Id}"></audio>`;
         
         const avatarVisible = 'visible';
-        const cameraStatus = '<div class="indicator-container videoMuted d-none"> \
+        const cameraStatus = '<div class="indicator-container videoMuted"> \
                         <div> \
                             <span class="indicator-icon-container  toolbar-icon" id=""> \
                                 <div class="jitsi-icon "> \
@@ -323,7 +323,7 @@ export class VideoPanel {
 
         
 
-        const micStatus = '<div class="indicator-container audioMuted d-none"> \
+        const micStatus = '<div class="indicator-container audioMuted"> \
                             <div> \
                                 <span class="indicator-icon-container  toolbar-icon" id=""> \
                                     <div class="jitsi-icon "> \
@@ -335,7 +335,7 @@ export class VideoPanel {
                             </div> \
                         </div>';
 
-        const moderatorStatus = '<div class="moderator-icon right d-none"> \
+        const moderatorStatus = '<div class="moderator-icon right"> \
                                 <div class="indicator-container"> \
                                     <div> \
                                         <span class="indicator-icon-container focusindicator toolbar-icon" id=""> \

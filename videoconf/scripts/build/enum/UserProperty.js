@@ -3,8 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserProperty = void 0;
 var UserProperty;
 (function (UserProperty) {
-    UserProperty["videoElem"] = "videoElem";
-    UserProperty["audioElem"] = "audioElem";
     UserProperty["videoPanel"] = "videoPanel";
     UserProperty["IsHost"] = "IsHost";
     UserProperty["useCamera"] = "useCamera";

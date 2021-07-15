@@ -90,8 +90,8 @@ export class MeetingUI {
         //list
         this.participantsListWidget = new ParticipantListWidget();
         const lProps = new ParticipantListPanelProps();
-        lProps.onUseCamera = this.meeting.allowCamera.bind(this.meeting);
-        lProps.onUseMic = this.meeting.allowMic.bind(this.meeting);
+        lProps.onMuteCamera = this.meeting.muteUserVideo.bind(this.meeting);
+        lProps.onMuteMic = this.meeting.muteUserAudio.bind(this.meeting);
         lProps.toggleCopyJoiningInfo = this.meeting.toggleCopyJoiningInfo.bind(this.meeting);
         this.participantsListWidget.init(lProps);
 
@@ -168,8 +168,8 @@ export class MeetingUI {
     }
 
     //add, remove participant to and from list
-    public addParticipant(jitsiId: string, name: string, me: boolean, useCamera: boolean, useMic: boolean) {
-        this.participantsListWidget.addParticipant(jitsiId, name, me, useCamera, useMic);
+    public addParticipant(jitsiId: string, name: string, me: boolean, muteCamera: boolean, muteMic: boolean) {
+        this.participantsListWidget.addParticipant(jitsiId, name, me, muteCamera, muteMic);
     }
 
     public removeParticipant(jitsiId: string) {
