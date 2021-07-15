@@ -91,8 +91,8 @@ export class BizGazeMeeting {
     jitsiConnection: any;
 
 
-    //JitsiServerDomain = "idlests.com";
-    JitsiServerDomain = "unimail.in";
+    JitsiServerDomain = "idlests.com";
+    //JitsiServerDomain = "unimail.in";
 
     localTracks: JitsiTrack[] = [];
 
@@ -1170,7 +1170,7 @@ export class BizGazeMeeting {
     //mute myself
     //called when user click toolbar buttons
     public OnToggleMuteMyAudio() {
-        if (this.roomInfo.IsWebinar && !this.myInfo.IsHost)
+        if (this.roomInfo.IsControlAllowed && !this.myInfo.IsHost)
             return;
 
         let audioMuted = false;
@@ -1181,7 +1181,7 @@ export class BizGazeMeeting {
     }
 
     public OnToggleMuteMyVideo() {
-        if (this.roomInfo.IsWebinar && !this.myInfo.IsHost)
+        if (this.roomInfo.IsControlAllowed && !this.myInfo.IsHost)
             return;
 
         let videoMuted = false;
